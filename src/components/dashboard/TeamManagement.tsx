@@ -25,6 +25,7 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
 
 const TeamManagement = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
