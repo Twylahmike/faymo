@@ -10,6 +10,8 @@ import AddClientDialog from "@/components/dashboard/AddClientDialog";
 import ContentPlanDialog from "@/components/dashboard/ContentPlanDialog";
 import AddPostDialog from "@/components/dashboard/AddPostDialog";
 import TeamManagement from "@/components/dashboard/TeamManagement";
+import AnalyticsView from "@/components/dashboard/AnalyticsView";
+import ContentCalendar from "@/components/dashboard/ContentCalendar";
 import {
   BarChart3, Users, MessageSquare, TrendingUp, LogOut, Sparkles, Bell,
   Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText, ShieldCheck,
