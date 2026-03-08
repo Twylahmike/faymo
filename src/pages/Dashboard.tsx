@@ -68,11 +68,14 @@ const Dashboard = () => {
 
   if (!user) return null;
 
+  const totalFollowers = creators.reduce((sum, c) => sum + (c.followers || 0), 0);
+  const formatNumber = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+
   const stats = [
-    { label: "Active Creators", value: "0", icon: Users, change: "+0%" },
+    { label: "Active Creators", value: String(creatorCount), icon: Users, change: creatorCount > 0 ? "Active" : "+0%" },
     { label: "Campaigns", value: "0", icon: BarChart3, change: "+0%" },
     { label: "Messages", value: "0", icon: MessageSquare, change: "0 new" },
-    { label: "Total Reach", value: "0", icon: TrendingUp, change: "+0%" },
+    { label: "Total Reach", value: formatNumber(totalFollowers), icon: TrendingUp, change: totalFollowers > 0 ? "Combined" : "+0%" },
   ];
 
   return (
@@ -102,11 +105,16 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">
-            Welcome back, <span className="text-gradient">{profile?.display_name || "Creator"}</span>
-          </h1>
-          <p className="mt-1 text-muted-foreground">Here's an overview of your creator management hub.</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold">
+              Welcome back, <span className="text-gradient">{profile?.display_name || "Creator"}</span>
+            </h1>
+            <p className="mt-1 text-muted-foreground">Here's an overview of your creator management hub.</p>
+          </div>
+          {creatorCount > 0 && (
+            <AddCreatorDialog onCreatorAdded={fetchCreators} />
+          )}
         </div>
 
         {/* Stats grid */}
@@ -125,19 +133,50 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Empty state */}
-        <div className="glass-card rounded-2xl p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Users className="h-8 w-8" />
+        {creatorCount === 0 ? (
+          /* Empty state */
+          <div className="glass-card rounded-2xl p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Users className="h-8 w-8" />
+            </div>
+            <h2 className="font-display text-xl font-bold mb-2">No creators yet</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Start by adding your first creator to your roster. You can manage their profiles, campaigns, and analytics all in one place.
+            </p>
+            <AddCreatorDialog onCreatorAdded={fetchCreators}>
+              <Button className="rounded-full bg-primary text-primary-foreground px-6">
+                Add Your First Creator
+              </Button>
+            </AddCreatorDialog>
           </div>
-          <h2 className="font-display text-xl font-bold mb-2">No creators yet</h2>
-          <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            Start by adding your first creator to your roster. You can manage their profiles, campaigns, and analytics all in one place.
-          </p>
-          <Button className="rounded-full bg-primary text-primary-foreground px-6">
-            Add Your First Creator
-          </Button>
-        </div>
+        ) : (
+          /* Creator list */
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {creators.map((creator) => (
+              <div key={creator.id} className="glass-card rounded-xl p-5 transition-all hover:glow-border">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-display font-bold text-foreground">{creator.name}</h3>
+                    {creator.handle && (
+                      <p className="text-sm text-muted-foreground">{creator.handle}</p>
+                    )}
+                  </div>
+                  {creator.platform && (
+                    <span className="text-xs rounded-full bg-primary/10 text-primary px-2.5 py-1">
+                      {creator.platform}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {creator.category && <span>{creator.category}</span>}
+                  {creator.followers > 0 && (
+                    <span>{formatNumber(creator.followers)} followers</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
