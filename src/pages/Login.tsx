@@ -65,6 +65,7 @@ const Login = () => {
               required
               className="bg-secondary border-border"
             />
+            <Link to="/forgot-password" className="text-xs text-primary hover:underline">Forgot password?</Link>
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground mt-2">
             {loading ? "Signing in..." : "Sign In"}
