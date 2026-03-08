@@ -272,6 +272,7 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           project_id: string | null
+          recurring_interval: string | null
           status: string | null
           updated_at: string
         }
@@ -288,6 +289,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           project_id?: string | null
+          recurring_interval?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -304,6 +306,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           project_id?: string | null
+          recurring_interval?: string | null
           status?: string | null
           updated_at?: string
         }
