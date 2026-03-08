@@ -1,6 +1,7 @@
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { GripVertical } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const KANBAN_COLUMNS = [
   { id: "planning", label: "Planning", color: "border-muted-foreground/30" },
@@ -19,9 +20,10 @@ const priorityColors: Record<string, string> = {
 interface KanbanBoardProps {
   tasks: any[];
   onStatusChange: (taskId: string, newStatus: string) => void;
+  teamProfiles?: Record<string, string>; // user_id -> display_name
 }
 
-export default function KanbanBoard({ tasks, onStatusChange }: KanbanBoardProps) {
+export default function KanbanBoard({ tasks, onStatusChange, teamProfiles = {} }: KanbanBoardProps) {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const taskId = result.draggableId;
@@ -31,6 +33,8 @@ export default function KanbanBoard({ tasks, onStatusChange }: KanbanBoardProps)
       onStatusChange(taskId, newStatus);
     }
   };
+
+  const getInitials = (name: string) => name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -50,31 +54,50 @@ export default function KanbanBoard({ tasks, onStatusChange }: KanbanBoardProps)
                     <span className="text-xs text-muted-foreground bg-secondary rounded-full px-2 py-0.5">{colTasks.length}</span>
                   </div>
                   <div className="space-y-3">
-                    {colTasks.map((task, index) => (
-                      <Draggable key={task.id} draggableId={task.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={`bg-secondary/50 rounded-lg p-3 space-y-2 transition-shadow ${snapshot.isDragging ? "shadow-lg shadow-primary/10 ring-1 ring-primary/30" : ""}`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div {...provided.dragHandleProps} className="mt-0.5">
-                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                    {colTasks.map((task, index) => {
+                      const assigneeName = task.assigned_to ? teamProfiles[task.assigned_to] : null;
+                      return (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-secondary/50 rounded-lg p-3 space-y-2 transition-shadow ${snapshot.isDragging ? "shadow-lg shadow-primary/10 ring-1 ring-primary/30" : ""}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div {...provided.dragHandleProps} className="mt-0.5">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{task.title}</p>
+                                  {task.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>}
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{task.title}</p>
-                                {task.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>}
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[task.priority] || priorityColors.medium}`}>{task.priority}</span>
+                                <div className="flex items-center gap-1.5">
+                                  {task.due_date && <span className="text-[10px] text-muted-foreground">{new Date(task.due_date).toLocaleDateString()}</span>}
+                                  {assigneeName && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Avatar className="h-5 w-5">
+                                            <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                              {getInitials(assigneeName)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p className="text-xs">{assigneeName}</p></TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[task.priority] || priorityColors.medium}`}>{task.priority}</span>
-                              {task.due_date && <span className="text-[10px] text-muted-foreground">{new Date(task.due_date).toLocaleDateString()}</span>}
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
+                          )}
+                        </Draggable>
+                      );
+                    })}
                     {provided.placeholder}
                   </div>
                 </div>
