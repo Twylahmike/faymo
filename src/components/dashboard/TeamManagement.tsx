@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Shield, ShieldCheck, User, Trash2 } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
+import { useUserRole } from "@/hooks/useUserRole";
+import AddTeamMemberDialog from "./AddTeamMemberDialog";
 
 interface TeamMember {
   user_id: string;
@@ -23,6 +25,7 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
 
 const TeamManagement = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,8 +114,11 @@ const TeamManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold">Team Members</h2>
-        <p className="text-sm text-muted-foreground">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+        <div>
+          <h2 className="font-display text-xl font-bold">Team Members</h2>
+          <p className="text-sm text-muted-foreground">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+        </div>
+        {isAdmin && <AddTeamMemberDialog onMemberAdded={fetchMembers} />}
       </div>
 
       {members.length === 0 ? (
