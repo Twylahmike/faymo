@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarDays, Plus, LayoutGrid, GanttChart as GanttIcon, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
+import GanttChart from "@/components/dashboard/GanttChart";
+import ProjectComments from "@/components/dashboard/ProjectComments";
 
 const priorityColors: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
@@ -123,7 +126,23 @@ const ProjectsPage = () => {
             </DialogContent>
           </Dialog>
         </div>
-        <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} />
+
+        <Tabs defaultValue="kanban" className="space-y-4">
+          <TabsList className="bg-secondary/50">
+            <TabsTrigger value="kanban" className="gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Kanban</TabsTrigger>
+            <TabsTrigger value="gantt" className="gap-1.5"><GanttIcon className="h-3.5 w-3.5" /> Timeline</TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Chat</TabsTrigger>
+          </TabsList>
+          <TabsContent value="kanban">
+            <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} />
+          </TabsContent>
+          <TabsContent value="gantt">
+            <GanttChart tasks={projectTasks} />
+          </TabsContent>
+          <TabsContent value="chat">
+            <ProjectComments projectId={selectedProject} />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
