@@ -173,6 +173,11 @@ const Dashboard = () => {
             <TabsTrigger value="creators" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4 mr-1" /> Creators
             </TabsTrigger>
+            {role === "admin" && (
+              <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <ShieldCheck className="h-4 w-4 mr-1" /> Team
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Clients Tab */}
