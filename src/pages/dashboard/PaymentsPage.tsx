@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, Plus, DollarSign, Clock, AlertCircle, CheckCircle2, Search } from "lucide-react";
+import { CreditCard, Plus, Clock, AlertCircle, CheckCircle2, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
@@ -25,8 +26,11 @@ const PaymentsPage = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "" });
+  const [editForm, setEditForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", status: "" });
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -44,20 +48,47 @@ const PaymentsPage = () => {
     if (!user || !form.client_id || !form.amount) return;
     const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await supabase.from("invoices").insert({
-      invoice_number: invoiceNumber,
-      client_id: form.client_id,
-      amount: parseFloat(form.amount),
-      due_date: form.due_date || null,
-      notes: form.notes || null,
-      payment_method: form.payment_method || null,
-      status: "pending",
-      created_by: user.id,
+      invoice_number: invoiceNumber, client_id: form.client_id, amount: parseFloat(form.amount),
+      due_date: form.due_date || null, notes: form.notes || null, payment_method: form.payment_method || null,
+      status: "pending", created_by: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Invoice created");
     setForm({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "" });
     setIsOpen(false);
     fetchAll();
+  };
+
+  const handleEdit = async () => {
+    if (!editingInvoice || !editForm.client_id || !editForm.amount) return;
+    const update: any = {
+      client_id: editForm.client_id, amount: parseFloat(editForm.amount),
+      due_date: editForm.due_date || null, notes: editForm.notes || null,
+      payment_method: editForm.payment_method || null, status: editForm.status,
+    };
+    if (editForm.status === "paid" && editingInvoice.status !== "paid") update.paid_at = new Date().toISOString();
+    const { error } = await supabase.from("invoices").update(update).eq("id", editingInvoice.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Invoice updated");
+    setIsEditOpen(false);
+    setEditingInvoice(null);
+    fetchAll();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("invoices").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Invoice deleted");
+    fetchAll();
+  };
+
+  const openEditDialog = (inv: any) => {
+    setEditingInvoice(inv);
+    setEditForm({
+      client_id: inv.client_id, amount: String(inv.amount), due_date: inv.due_date || "",
+      notes: inv.notes || "", payment_method: inv.payment_method || "", status: inv.status || "draft",
+    });
+    setIsEditOpen(true);
   };
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -127,6 +158,59 @@ const PaymentsPage = () => {
         </Dialog>
       </div>
 
+      {/* Edit Invoice Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Invoice {editingInvoice?.invoice_number}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Client *</Label>
+              <Select value={editForm.client_id} onValueChange={v => setEditForm(p => ({ ...p, client_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select client..." /></SelectTrigger>
+                <SelectContent>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Amount (KES) *</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm(p => ({ ...p, amount: e.target.value }))} /></div>
+              <div><Label>Due Date</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(p => ({ ...p, due_date: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Payment Method</Label>
+                <Select value={editForm.payment_method} onValueChange={v => setEditForm(p => ({ ...p, payment_method: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mpesa">M-Pesa</SelectItem>
+                    <SelectItem value="paypal">PayPal</SelectItem>
+                    <SelectItem value="stripe">Stripe</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} /></div>
+            <Button className="w-full" onClick={handleEdit}>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="glass-card rounded-xl p-5">
@@ -193,17 +277,39 @@ const PaymentsPage = () => {
                     <span className={`text-xs rounded-full px-2.5 py-1 ${statusColors[inv.status]}`}>{inv.status}</span>
                   </TableCell>
                   <TableCell>
-                    <Select value={inv.status} onValueChange={(v) => handleStatusChange(inv.id, v)}>
-                      <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="sent">Sent</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Select value={inv.status} onValueChange={(v) => handleStatusChange(inv.id, v)}>
+                        <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="sent">Sent</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="overdue">Overdue</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(inv)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Invoice {inv.invoice_number}?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete this invoice. This cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDelete(inv.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
