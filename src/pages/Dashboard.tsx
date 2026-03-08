@@ -344,6 +344,14 @@ const Dashboard = () => {
               </div>
             )}
           </TabsContent>
+          {/* Calendar Tab */}
+          <TabsContent value="calendar">
+            <ContentCalendar contentPosts={contentPosts} clients={clients} contentPlans={contentPlans} />
+          </TabsContent>
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <AnalyticsView contentPosts={contentPosts} />
+          </TabsContent>
           {/* Team Tab (Admin only) */}
           {role === "admin" && (
             <TabsContent value="team">
