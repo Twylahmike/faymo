@@ -10,15 +10,19 @@ import { toast } from "sonner";
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [agencyName, setAgencyName] = useState("");
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agencyName.trim()) {
+      toast.error("Agency name is required");
+      return;
+    }
     setLoading(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await signUp(email, password, agencyName.trim());
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -40,27 +44,29 @@ const Signup = () => {
           <Sparkles className="h-6 w-6 text-primary" />
           <span className="font-display text-xl font-bold">F<span className="text-primary">🩵</span>ymo</span>
         </div>
-        <h1 className="font-display text-2xl font-bold mb-1">Create your account</h1>
-        <p className="text-sm text-muted-foreground mb-8">Start managing creators in minutes</p>
+        <h1 className="font-display text-2xl font-bold mb-1">Register your agency</h1>
+        <p className="text-sm text-muted-foreground mb-2">Create an agency account to manage your team, clients & creators</p>
+        <p className="text-xs text-muted-foreground/70 mb-8">Are you a client or team member? Ask your agency for login credentials.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Display Name</Label>
+            <Label htmlFor="agency-name">Agency Name *</Label>
             <Input
-              id="name"
+              id="agency-name"
               type="text"
-              placeholder="Your name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your agency name"
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+              required
               className="bg-secondary border-border"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="agency@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -68,7 +74,7 @@ const Signup = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Password *</Label>
             <Input
               id="password"
               type="password"
@@ -81,7 +87,7 @@ const Signup = () => {
             />
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground mt-2">
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? "Creating agency..." : "Register Agency"}
           </Button>
         </form>
 
