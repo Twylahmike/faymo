@@ -9,9 +9,10 @@ import AddCreatorDialog from "@/components/dashboard/AddCreatorDialog";
 import AddClientDialog from "@/components/dashboard/AddClientDialog";
 import ContentPlanDialog from "@/components/dashboard/ContentPlanDialog";
 import AddPostDialog from "@/components/dashboard/AddPostDialog";
+import TeamManagement from "@/components/dashboard/TeamManagement";
 import {
   BarChart3, Users, MessageSquare, TrendingUp, LogOut, Sparkles, Bell,
-  Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText,
+  Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText, ShieldCheck,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
