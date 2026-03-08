@@ -6,6 +6,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 const features = [
   {
@@ -41,10 +42,12 @@ const features = [
 ];
 
 const Features = () => {
+  const { ref, isVisible } = useScrollAnimation();
+
   return (
     <section id="features" className="relative py-24 lg:py-32">
-      <div className="container mx-auto px-6">
-        <div className="mx-auto max-w-2xl text-center mb-16">
+      <div className="container mx-auto px-6" ref={ref}>
+        <div className={`mx-auto max-w-2xl text-center mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">Features</p>
           <h2 className="font-display text-3xl font-bold sm:text-4xl lg:text-5xl">
             Everything you need to{" "}
@@ -59,8 +62,8 @@ const Features = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="glass-card group p-6 transition-all duration-300 hover:glow-border hover:bg-card/80"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className={`glass-card group p-6 transition-all duration-700 hover:glow-border hover:bg-card/80 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              style={{ transitionDelay: `${index * 100 + 200}ms` }}
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <feature.icon className="h-6 w-6" />

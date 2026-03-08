@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const navLinks = [
     { label: "Features", href: "#features" },
@@ -23,23 +26,14 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Desktop Nav */}
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) =>
             link.href.startsWith("/") ? (
-              <Link
-                key={link.label}
-                to={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <Link key={link.label} to={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {link.label}
               </Link>
             ) : (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <a key={link.label} href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {link.label}
               </a>
             )
@@ -47,51 +41,50 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            Login
-          </Button>
-          <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse-glow">
-            Get Started
-          </Button>
+          {user ? (
+            <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/dashboard")}>
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate("/login")}>
+                Login
+              </Button>
+              <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse-glow" onClick={() => navigate("/signup")}>
+                Get Started
+              </Button>
+            </>
+          )}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="text-foreground md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-        >
+        <button className="text-foreground md:hidden" onClick={() => setIsOpen(!isOpen)}>
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {isOpen && (
         <div className="border-t border-border/50 bg-background/95 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-4 px-6 py-6">
             {navLinks.map((link) =>
               link.href.startsWith("/") ? (
-                <Link
-                  key={link.label}
-                  to={link.href}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => setIsOpen(false)}
-                >
+                <Link key={link.label} to={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setIsOpen(false)}>
                   {link.label}
                 </Link>
               ) : (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => setIsOpen(false)}
-                >
+                <a key={link.label} href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setIsOpen(false)}>
                   {link.label}
                 </a>
               )
             )}
             <div className="flex gap-3 pt-2">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">Login</Button>
-              <Button size="sm" className="rounded-full bg-primary text-primary-foreground">Get Started</Button>
+              {user ? (
+                <Button size="sm" className="rounded-full bg-primary text-primary-foreground" onClick={() => { navigate("/dashboard"); setIsOpen(false); }}>Dashboard</Button>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { navigate("/login"); setIsOpen(false); }}>Login</Button>
+                  <Button size="sm" className="rounded-full bg-primary text-primary-foreground" onClick={() => { navigate("/signup"); setIsOpen(false); }}>Get Started</Button>
+                </>
+              )}
             </div>
           </div>
         </div>

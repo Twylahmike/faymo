@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 const testimonials = [
   {
@@ -22,10 +23,12 @@ const testimonials = [
 ];
 
 const Testimonials = () => {
+  const { ref, isVisible } = useScrollAnimation();
+
   return (
     <section className="relative py-24 lg:py-32 bg-secondary/30">
-      <div className="container mx-auto px-6">
-        <div className="mx-auto max-w-2xl text-center mb-16">
+      <div className="container mx-auto px-6" ref={ref}>
+        <div className={`mx-auto max-w-2xl text-center mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">Testimonials</p>
           <h2 className="font-display text-3xl font-bold sm:text-4xl">
             Loved by <span className="text-gradient">industry leaders</span>
@@ -33,8 +36,12 @@ const Testimonials = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {testimonials.map((t) => (
-            <div key={t.name} className="glass-card p-6 transition-all duration-300 hover:glow-border">
+          {testimonials.map((t, index) => (
+            <div
+              key={t.name}
+              className={`glass-card p-6 transition-all duration-700 hover:glow-border ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              style={{ transitionDelay: `${index * 150 + 200}ms` }}
+            >
               <div className="flex gap-1 mb-4">
                 {Array.from({ length: t.rating }).map((_, i) => (
                   <Star key={i} className="h-4 w-4 fill-primary text-primary" />

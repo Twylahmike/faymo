@@ -1,12 +1,14 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 const CTABanner = () => {
+  const { ref, isVisible } = useScrollAnimation();
+
   return (
     <section className="relative py-24 lg:py-32">
-      <div className="container mx-auto px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-primary/5 p-12 text-center lg:p-20">
-          {/* Glow effects */}
+      <div className="container mx-auto px-6" ref={ref}>
+        <div className={`relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-primary/5 p-12 text-center lg:p-20 transition-all duration-700 ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-32 bg-primary/10 blur-[80px] pointer-events-none" />
 
