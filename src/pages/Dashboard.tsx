@@ -18,6 +18,19 @@ const Dashboard = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
+  const [creatorCount, setCreatorCount] = useState(0);
+  const [creators, setCreators] = useState<any[]>([]);
+
+  const fetchCreators = useCallback(async () => {
+    if (!user) return;
+    const { data, count } = await supabase
+      .from("creators")
+      .select("*", { count: "exact" })
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    setCreators(data || []);
+    setCreatorCount(count || 0);
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) {
