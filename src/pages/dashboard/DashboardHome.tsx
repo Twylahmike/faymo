@@ -2,24 +2,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, CalendarDays, TrendingUp, DollarSign, Briefcase, CheckCircle2, AlertCircle } from "lucide-react";
+import { Building2, Users, CalendarDays, TrendingUp, DollarSign, Briefcase, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
 
 const DashboardHome = () => {
   const { user } = useAuth();
-  const { role } = useUserRole();
+  const { role, isAdmin } = useUserRole();
   const [stats, setStats] = useState({ clients: 0, creators: 0, projects: 0, invoiceTotal: 0, pendingInvoices: 0, activeProjects: 0 });
   const [invoices, setInvoices] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
-    const [clientsRes, creatorsRes, projectsRes, invoicesRes] = await Promise.all([
+    const [clientsRes, creatorsRes, projectsRes, invoicesRes, activityRes] = await Promise.all([
       supabase.from("clients").select("id", { count: "exact", head: true }),
       supabase.from("creators").select("id", { count: "exact", head: true }),
       supabase.from("projects").select("id, status"),
       supabase.from("invoices").select("*"),
+      supabase.from("activity_log").select("*").order("created_at", { ascending: false }).limit(15),
     ]);
 
     const allProjects = projectsRes.data || [];
@@ -31,11 +33,11 @@ const DashboardHome = () => {
     setStats({ clients: clientsRes.count || 0, creators: creatorsRes.count || 0, projects: allProjects.length, invoiceTotal, pendingInvoices, activeProjects });
     setInvoices(allInvoices);
     setProjects(allProjects);
+    setRecentActivity(activityRes.data || []);
   }, [user]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  // Aggregate revenue by month from real invoices
   const revenueData = useMemo(() => {
     const monthMap: Record<string, { revenue: number; expenses: number }> = {};
     invoices.forEach(inv => {
@@ -47,7 +49,6 @@ const DashboardHome = () => {
     return Object.entries(monthMap).map(([month, data]) => ({ month, ...data })).slice(-6);
   }, [invoices]);
 
-  // Real project status distribution
   const projectStatus = useMemo(() => {
     const counts: Record<string, number> = {};
     projects.forEach(p => {
@@ -67,13 +68,19 @@ const DashboardHome = () => {
     }));
   }, [projects]);
 
-  const statCards = [
+  // Workers see fewer stat cards (no revenue)
+  const statCards = isAdmin ? [
     { label: "Total Clients", value: stats.clients, icon: Building2, color: "text-blue-400", bg: "bg-blue-400/10" },
     { label: "Creators", value: stats.creators, icon: Users, color: "text-amber-400", bg: "bg-amber-400/10" },
     { label: "Active Projects", value: stats.activeProjects, icon: Briefcase, color: "text-purple-400", bg: "bg-purple-400/10" },
     { label: "Revenue", value: `KES ${stats.invoiceTotal.toLocaleString()}`, icon: DollarSign, color: "text-green-400", bg: "bg-green-400/10" },
     { label: "Pending Invoices", value: stats.pendingInvoices, icon: AlertCircle, color: "text-orange-400", bg: "bg-orange-400/10" },
     { label: "Total Projects", value: stats.projects, icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
+  ] : [
+    { label: "Total Clients", value: stats.clients, icon: Building2, color: "text-blue-400", bg: "bg-blue-400/10" },
+    { label: "Active Projects", value: stats.activeProjects, icon: Briefcase, color: "text-purple-400", bg: "bg-purple-400/10" },
+    { label: "Total Projects", value: stats.projects, icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Creators", value: stats.creators, icon: Users, color: "text-amber-400", bg: "bg-amber-400/10" },
   ];
 
   return (
@@ -83,7 +90,7 @@ const DashboardHome = () => {
         <p className="text-muted-foreground text-sm mt-1">Welcome back! Here's what's happening with your agency.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className={`grid gap-4 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-4"}`}>
         {statCards.map((stat) => (
           <div key={stat.label} className="glass-card p-4 rounded-xl transition-all hover:glow-border">
             <div className="flex items-center gap-3 mb-2">
@@ -98,24 +105,26 @@ const DashboardHome = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="glass-card rounded-xl p-5 lg:col-span-2">
-          <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
-          {revenueData.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">No invoice data yet. Create and mark invoices as paid to see trends.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }} />
-                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {isAdmin && (
+          <div className="glass-card rounded-xl p-5 lg:col-span-2">
+            <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
+            {revenueData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-12">No invoice data yet. Create and mark invoices as paid to see trends.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }} />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        )}
 
-        <div className="glass-card rounded-xl p-5">
+        <div className={`glass-card rounded-xl p-5 ${!isAdmin ? "lg:col-span-2" : ""}`}>
           <h3 className="font-display font-bold mb-4">Project Status</h3>
           {projectStatus.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">No projects yet.</p>
@@ -140,6 +149,30 @@ const DashboardHome = () => {
                 ))}
               </div>
             </>
+          )}
+        </div>
+
+        {/* Recent Activity Feed */}
+        <div className="glass-card rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="h-4 w-4 text-primary" />
+            <h3 className="font-display font-bold">Recent Activity</h3>
+          </div>
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No activity yet.</p>
+          ) : (
+            <div className="space-y-0 max-h-[300px] overflow-y-auto">
+              {recentActivity.map((log) => (
+                <div key={log.id} className="flex gap-3 py-2.5 border-b border-border/30 last:border-0">
+                  <div className="mt-1 h-2 w-2 rounded-full bg-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground truncate">{log.action}</p>
+                    {log.details && <p className="text-xs text-muted-foreground truncate">{log.details}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(log.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const statusColors: Record<string, string> = {
 
 const ClientsPage = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +72,6 @@ const ClientsPage = () => {
     setClientInvoices(invRes.data || []);
     setClientServices(svcRes.data || []);
 
-    // Fetch tasks from client's projects
     const projectIds = (projRes.data || []).map(p => p.id);
     if (projectIds.length > 0) {
       const { data: tasks } = await supabase.from("tasks").select("*, projects(name)").in("project_id", projectIds).order("created_at", { ascending: false });
@@ -79,7 +80,6 @@ const ClientsPage = () => {
       setClientTasks([]);
     }
 
-    // List files from storage
     const { data: files } = await supabase.storage.from("media").list(`${clientId}`, { limit: 100 });
     setClientFiles((files || []).map(f => ({
       name: f.name,
@@ -140,21 +140,23 @@ const ClientsPage = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={openEdit}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-red-400 border-red-400/30 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5 mr-1" /> Delete</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Client?</AlertDialogTitle>
-                  <AlertDialogDescription>This will permanently delete {selectedClientData.name} and cannot be undone.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleDelete(selectedClient)} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-red-400 border-red-400/30 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5 mr-1" /> Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Client?</AlertDialogTitle>
+                    <AlertDialogDescription>This will permanently delete {selectedClientData.name} and cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(selectedClient)} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
 
@@ -255,7 +257,7 @@ const ClientsPage = () => {
                       <span className={`text-xs rounded-full px-2 py-0.5 ${svc.status === "active" ? "bg-green-500/10 text-green-400" : "bg-muted text-muted-foreground"}`}>{svc.status}</span>
                     </div>
                     {svc.description && <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{svc.description}</p>}
-                    <p className="text-sm font-display font-bold text-emerald-400">KES {Number(svc.price).toLocaleString()}</p>
+                    <p className="text-sm font-display font-bold text-emerald-400">{svc.currency || "KES"} {Number(svc.price).toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -283,7 +285,7 @@ const ClientsPage = () => {
                     {clientInvoices.map(inv => (
                       <TableRow key={inv.id}>
                         <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
-                        <TableCell className="font-display font-bold">KES {Number(inv.amount).toLocaleString()}</TableCell>
+                        <TableCell className="font-display font-bold">{inv.currency || "KES"} {Number(inv.amount).toLocaleString()}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
                         <TableCell><span className={`text-xs rounded-full px-2.5 py-1 ${statusColors[inv.status] || statusColors.draft}`}>{inv.status}</span></TableCell>
                       </TableRow>

@@ -1,14 +1,15 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Sparkles, LogOut, CalendarDays, CheckCircle2, Clock, FileText,
-  ThumbsUp, CreditCard, FolderOpen, Bell, ExternalLink,
+  ThumbsUp, CreditCard, FolderOpen, Bell, ExternalLink, MessageSquare, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,6 +27,13 @@ const ClientPortal = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  // Messaging
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentProfiles, setCommentProfiles] = useState<Record<string, string>>({});
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loading = authLoading || roleLoading;
 
@@ -35,17 +43,18 @@ const ClientPortal = () => {
     const { data: client } = await supabase.from("clients").select("*").eq("user_id", user.id).single();
     setClientRecord(client);
 
-    // Fetch notifications
     const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
     setNotifications(notifs || []);
 
     if (client) {
-      const [plansRes, invoicesRes] = await Promise.all([
+      const [plansRes, invoicesRes, projRes] = await Promise.all([
         supabase.from("content_plans").select("*").eq("client_id", client.id).order("created_at", { ascending: false }),
         supabase.from("invoices").select("*").eq("client_id", client.id).order("created_at", { ascending: false }),
+        supabase.from("projects").select("id, name").eq("client_id", client.id),
       ]);
       setContentPlans(plansRes.data || []);
       setInvoices(invoicesRes.data || []);
+      setProjects(projRes.data || []);
 
       if (plansRes.data && plansRes.data.length > 0) {
         const planIds = plansRes.data.map(p => p.id);
@@ -56,7 +65,6 @@ const ClientPortal = () => {
       const { data: logs } = await supabase.from("activity_log").select("*").eq("client_id", client.id).order("created_at", { ascending: false }).limit(20);
       setActivityLog(logs || []);
 
-      // Fetch files from storage
       const { data: fileList } = await supabase.storage.from("media").list(`clients/${client.id}`, { limit: 50 });
       setFiles(fileList || []);
     }
@@ -93,6 +101,48 @@ const ClientPortal = () => {
       ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Fetch comments for selected project
+  const fetchComments = useCallback(async (projectId: string) => {
+    const { data } = await supabase.from("project_comments").select("*").eq("project_id", projectId).order("created_at", { ascending: true });
+    setComments(data || []);
+    // Fetch profiles for comment authors
+    const userIds = [...new Set((data || []).map(c => c.user_id))];
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("user_id, display_name").in("user_id", userIds);
+      const map: Record<string, string> = {};
+      (profiles || []).forEach(p => { map[p.user_id] = p.display_name || "User"; });
+      setCommentProfiles(map);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedProjectId) fetchComments(selectedProjectId);
+  }, [selectedProjectId, fetchComments]);
+
+  // Realtime comments
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const channel = supabase
+      .channel("client-comments")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "project_comments", filter: `project_id=eq.${selectedProjectId}` },
+        () => { fetchComments(selectedProjectId); }
+      ).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedProjectId, fetchComments]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments]);
+
+  const sendMessage = async () => {
+    if (!user || !selectedProjectId || !newMessage.trim()) return;
+    const { error } = await supabase.from("project_comments").insert({
+      project_id: selectedProjectId, user_id: user.id, content: newMessage.trim(),
+    });
+    if (error) { toast.error("Failed to send message"); return; }
+    setNewMessage("");
+  };
 
   const handleApprove = async (postId: string) => {
     const { error } = await supabase.from("content_posts").update({
@@ -155,7 +205,6 @@ const ClientPortal = () => {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            {/* Notification Bell */}
             <div className="relative">
               <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowNotifications(!showNotifications)}>
                 <Bell className="h-4 w-4" />
@@ -199,7 +248,7 @@ const ClientPortal = () => {
           <h1 className="font-display text-3xl font-bold">
             Welcome, <span className="text-gradient">{profile?.display_name || clientRecord?.name || "Client"}</span>
           </h1>
-          <p className="mt-1 text-muted-foreground">View your content, invoices, and files.</p>
+          <p className="mt-1 text-muted-foreground">View your content, invoices, files, and messages.</p>
         </div>
 
         {/* Stats */}
@@ -239,6 +288,7 @@ const ClientPortal = () => {
           <TabsList className="bg-secondary/50">
             <TabsTrigger value="content" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Content</TabsTrigger>
             <TabsTrigger value="invoices" className="gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Invoices</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Messages</TabsTrigger>
             <TabsTrigger value="files" className="gap-1.5"><FolderOpen className="h-3.5 w-3.5" /> Files</TabsTrigger>
             <TabsTrigger value="activity" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Activity</TabsTrigger>
           </TabsList>
@@ -334,7 +384,7 @@ const ClientPortal = () => {
                       {invoices.map((inv) => (
                         <TableRow key={inv.id}>
                           <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
-                          <TableCell className="font-display font-bold">KES {Number(inv.amount).toLocaleString()}</TableCell>
+                          <TableCell className="font-display font-bold">{inv.currency || "KES"} {Number(inv.amount).toLocaleString()}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
                           <TableCell className="text-sm capitalize">{inv.payment_method?.replace("_", " ") || "—"}</TableCell>
                           <TableCell>
@@ -344,6 +394,80 @@ const ClientPortal = () => {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages">
+            <div className="space-y-6">
+              <h2 className="font-display text-xl font-bold">Messages</h2>
+              {projects.length === 0 ? (
+                <div className="glass-card rounded-xl p-8 text-center">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-muted-foreground">No projects to message about yet.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-[250px_1fr]">
+                  {/* Project list */}
+                  <div className="glass-card rounded-xl p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground px-2 py-1 font-medium">Your Projects</p>
+                    {projects.map(p => (
+                      <button key={p.id}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedProjectId === p.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-secondary/50 text-foreground"}`}
+                        onClick={() => setSelectedProjectId(p.id)}>
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Chat area */}
+                  <div className="glass-card rounded-xl flex flex-col min-h-[400px]">
+                    {!selectedProjectId ? (
+                      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                        Select a project to view messages
+                      </div>
+                    ) : (
+                      <>
+                        <div className="p-4 border-b border-border/50">
+                          <p className="text-sm font-semibold">{projects.find(p => p.id === selectedProjectId)?.name}</p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[350px]">
+                          {comments.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start the conversation!</p>
+                          ) : (
+                            comments.map(c => {
+                              const isMe = c.user_id === user?.id;
+                              return (
+                                <div key={c.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                                  <div className={`max-w-[70%] rounded-xl px-4 py-2.5 ${isMe ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
+                                    {!isMe && <p className="text-[10px] font-medium mb-0.5 opacity-70">{commentProfiles[c.user_id] || "Agency"}</p>}
+                                    <p className="text-sm">{c.content}</p>
+                                    <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                                      {new Date(c.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          <div ref={messagesEndRef} />
+                        </div>
+                        <div className="p-3 border-t border-border/50 flex gap-2">
+                          <Input
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                            className="bg-secondary/50"
+                          />
+                          <Button size="icon" onClick={sendMessage} disabled={!newMessage.trim()}>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
