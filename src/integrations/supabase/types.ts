@@ -324,6 +324,77 @@ export type Database = {
           },
         ]
       }
+      loyalty_points: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          id: string
+          points: number
+          reason: string
+          type: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          points?: number
+          reason: string
+          type?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          points?: number
+          reason?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_points_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -413,6 +484,63 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          converted_client_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          points_awarded: number | null
+          referred_email: string | null
+          referred_name: string
+          referred_phone: string | null
+          referrer_client_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          converted_client_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          points_awarded?: number | null
+          referred_email?: string | null
+          referred_name: string
+          referred_phone?: string | null
+          referrer_client_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          converted_client_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          points_awarded?: number | null
+          referred_email?: string | null
+          referred_name?: string
+          referred_phone?: string | null
+          referrer_client_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_client_id_fkey"
+            columns: ["referrer_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
