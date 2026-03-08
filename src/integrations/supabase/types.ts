@@ -14,6 +14,205 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          client_id: string
+          created_at: string
+          details: string | null
+          id: string
+          performed_by: string
+        }
+        Insert: {
+          action: string
+          client_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          performed_by: string
+        }
+        Update: {
+          action?: string
+          client_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          performed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          agency_user_id: string
+          auto_generated_password: string | null
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agency_user_id: string
+          auto_generated_password?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agency_user_id?: string
+          auto_generated_password?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      content_plans: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_posts: {
+        Row: {
+          approved_at: string | null
+          approved_by_client: boolean | null
+          caption: string | null
+          content_plan_id: string
+          created_at: string
+          creator_id: string | null
+          engagement_comments: number | null
+          engagement_likes: number | null
+          engagement_reach: number | null
+          id: string
+          media_url: string | null
+          notes: string | null
+          platform: string | null
+          scheduled_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_client?: boolean | null
+          caption?: string | null
+          content_plan_id: string
+          created_at?: string
+          creator_id?: string | null
+          engagement_comments?: number | null
+          engagement_likes?: number | null
+          engagement_reach?: number | null
+          id?: string
+          media_url?: string | null
+          notes?: string | null
+          platform?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_client?: boolean | null
+          caption?: string | null
+          content_plan_id?: string
+          created_at?: string
+          creator_id?: string | null
+          engagement_comments?: number | null
+          engagement_likes?: number | null
+          engagement_reach?: number | null
+          id?: string
+          media_url?: string | null
+          notes?: string | null
+          platform?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_posts_content_plan_id_fkey"
+            columns: ["content_plan_id"]
+            isOneToOne: false
+            referencedRelation: "content_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_posts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creators: {
         Row: {
           avatar_url: string | null
@@ -89,15 +288,43 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "worker" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -224,6 +451,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "worker", "client"],
+    },
   },
 } as const
