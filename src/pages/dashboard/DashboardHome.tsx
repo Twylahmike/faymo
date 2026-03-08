@@ -1,14 +1,17 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Users, CalendarDays, TrendingUp, DollarSign, Briefcase, CheckCircle2, AlertCircle } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { format, parseISO, startOfMonth } from "date-fns";
 
 const DashboardHome = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
   const [stats, setStats] = useState({ clients: 0, creators: 0, projects: 0, invoiceTotal: 0, pendingInvoices: 0, activeProjects: 0 });
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -16,25 +19,53 @@ const DashboardHome = () => {
       supabase.from("clients").select("id", { count: "exact", head: true }),
       supabase.from("creators").select("id", { count: "exact", head: true }),
       supabase.from("projects").select("id, status"),
-      supabase.from("invoices").select("amount, status"),
+      supabase.from("invoices").select("*"),
     ]);
 
-    const activeProjects = (projectsRes.data || []).filter(p => p.status === "in_progress").length;
-    const invoices = invoicesRes.data || [];
-    const invoiceTotal = invoices.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.amount), 0);
-    const pendingInvoices = invoices.filter(i => i.status === "pending" || i.status === "sent").length;
+    const allProjects = projectsRes.data || [];
+    const allInvoices = invoicesRes.data || [];
+    const activeProjects = allProjects.filter(p => p.status === "in_progress").length;
+    const invoiceTotal = allInvoices.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.amount), 0);
+    const pendingInvoices = allInvoices.filter(i => i.status === "pending" || i.status === "sent").length;
 
-    setStats({
-      clients: clientsRes.count || 0,
-      creators: creatorsRes.count || 0,
-      projects: (projectsRes.data || []).length,
-      invoiceTotal,
-      pendingInvoices,
-      activeProjects,
-    });
+    setStats({ clients: clientsRes.count || 0, creators: creatorsRes.count || 0, projects: allProjects.length, invoiceTotal, pendingInvoices, activeProjects });
+    setInvoices(allInvoices);
+    setProjects(allProjects);
   }, [user]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // Aggregate revenue by month from real invoices
+  const revenueData = useMemo(() => {
+    const monthMap: Record<string, { revenue: number; expenses: number }> = {};
+    invoices.forEach(inv => {
+      const month = inv.paid_at ? format(parseISO(inv.paid_at), "MMM yyyy") : (inv.created_at ? format(parseISO(inv.created_at), "MMM yyyy") : null);
+      if (!month) return;
+      if (!monthMap[month]) monthMap[month] = { revenue: 0, expenses: 0 };
+      if (inv.status === "paid") monthMap[month].revenue += Number(inv.amount);
+    });
+    return Object.entries(monthMap).map(([month, data]) => ({ month, ...data })).slice(-6);
+  }, [invoices]);
+
+  // Real project status distribution
+  const projectStatus = useMemo(() => {
+    const counts: Record<string, number> = {};
+    projects.forEach(p => {
+      const s = p.status || "planning";
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const colorMap: Record<string, string> = {
+      planning: "hsl(var(--muted-foreground))",
+      in_progress: "hsl(var(--primary))",
+      completed: "hsl(142, 76%, 36%)",
+      on_hold: "hsl(45, 93%, 47%)",
+    };
+    return Object.entries(counts).map(([name, value]) => ({
+      name: name.replace("_", " "),
+      value,
+      color: colorMap[name] || "hsl(var(--muted-foreground))",
+    }));
+  }, [projects]);
 
   const statCards = [
     { label: "Total Clients", value: stats.clients, icon: Building2, color: "text-blue-400", bg: "bg-blue-400/10" },
@@ -45,22 +76,6 @@ const DashboardHome = () => {
     { label: "Total Projects", value: stats.projects, icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
   ];
 
-  // Mock chart data for now
-  const revenueData = [
-    { month: "Jan", revenue: 45000, expenses: 30000 },
-    { month: "Feb", revenue: 52000, expenses: 28000 },
-    { month: "Mar", revenue: 61000, expenses: 35000 },
-    { month: "Apr", revenue: 58000, expenses: 32000 },
-    { month: "May", revenue: 72000, expenses: 38000 },
-    { month: "Jun", revenue: 85000, expenses: 42000 },
-  ];
-
-  const projectStatus = [
-    { name: "Planning", value: 3, color: "hsl(var(--muted-foreground))" },
-    { name: "In Progress", value: 5, color: "hsl(var(--primary))" },
-    { name: "Completed", value: 8, color: "hsl(142, 76%, 36%)" },
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -68,7 +83,6 @@ const DashboardHome = () => {
         <p className="text-muted-foreground text-sm mt-1">Welcome back! Here's what's happening with your agency.</p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {statCards.map((stat) => (
           <div key={stat.label} className="glass-card p-4 rounded-xl transition-all hover:glow-border">
@@ -83,50 +97,53 @@ const DashboardHome = () => {
         ))}
       </div>
 
-      {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Revenue Chart */}
         <div className="glass-card rounded-xl p-5 lg:col-span-2">
-          <h3 className="font-display font-bold mb-4">Revenue vs Expenses</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }}
-              />
-              <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.5} />
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
+          {revenueData.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">No invoice data yet. Create and mark invoices as paid to see trends.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }} />
+                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Project Status Pie */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="font-display font-bold mb-4">Project Status</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={projectStatus} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
-                {projectStatus.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
+          {projectStatus.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">No projects yet.</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={projectStatus} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
+                    {projectStatus.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {projectStatus.map((s) => (
+                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                    {s.name} ({s.value})
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-3 mt-2">
-            {projectStatus.map((s) => (
-              <div key={s.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <div className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                {s.name} ({s.value})
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="glass-card rounded-xl p-5">
         <h3 className="font-display font-bold mb-3">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
