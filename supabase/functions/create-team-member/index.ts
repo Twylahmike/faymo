@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { display_name: name, role: memberRole },
+      user_metadata: { display_name: name, role: memberRole === "admin" ? "agency" : "worker" },
     });
 
     if (createError) {
