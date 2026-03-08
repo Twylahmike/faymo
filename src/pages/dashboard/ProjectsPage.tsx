@@ -7,16 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, Plus, GripVertical, AlertCircle } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 import { toast } from "sonner";
-
-const KANBAN_COLUMNS = [
-  { id: "planning", label: "Planning", color: "border-muted-foreground/30" },
-  { id: "in_progress", label: "In Progress", color: "border-primary/50" },
-  { id: "review", label: "Review", color: "border-amber-400/50" },
-  { id: "completed", label: "Completed", color: "border-green-400/50" },
-];
+import KanbanBoard from "@/components/dashboard/KanbanBoard";
 
 const priorityColors: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
@@ -33,7 +26,6 @@ const ProjectsPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const [view, setView] = useState("kanban");
   const [form, setForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "" });
   const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "" });
 
@@ -54,13 +46,8 @@ const ProjectsPage = () => {
   const handleAddProject = async () => {
     if (!user || !form.name) return;
     const { error } = await supabase.from("projects").insert({
-      name: form.name,
-      description: form.description || null,
-      client_id: form.client_id || null,
-      priority: form.priority,
-      start_date: form.start_date || null,
-      due_date: form.due_date || null,
-      created_by: user.id,
+      name: form.name, description: form.description || null, client_id: form.client_id || null,
+      priority: form.priority, start_date: form.start_date || null, due_date: form.due_date || null, created_by: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Project created");
@@ -72,12 +59,8 @@ const ProjectsPage = () => {
   const handleAddTask = async () => {
     if (!user || !taskForm.title || !selectedProject) return;
     const { error } = await supabase.from("tasks").insert({
-      title: taskForm.title,
-      description: taskForm.description || null,
-      project_id: selectedProject,
-      priority: taskForm.priority,
-      due_date: taskForm.due_date || null,
-      created_by: user.id,
+      title: taskForm.title, description: taskForm.description || null,
+      project_id: selectedProject, priority: taskForm.priority, due_date: taskForm.due_date || null, created_by: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Task added");
@@ -89,7 +72,7 @@ const ProjectsPage = () => {
   const handleTaskStatusChange = async (taskId: string, newStatus: string) => {
     const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", taskId);
     if (error) { toast.error(error.message); return; }
-    fetchAll();
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
   const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
@@ -140,43 +123,7 @@ const ProjectsPage = () => {
             </DialogContent>
           </Dialog>
         </div>
-
-        {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto">
-          {KANBAN_COLUMNS.map((col) => {
-            const colTasks = projectTasks.filter(t => t.status === col.id);
-            return (
-              <div key={col.id} className={`glass-card rounded-xl p-4 border-t-2 ${col.color} min-h-[300px]`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display font-semibold text-sm">{col.label}</h3>
-                  <span className="text-xs text-muted-foreground bg-secondary rounded-full px-2 py-0.5">{colTasks.length}</span>
-                </div>
-                <div className="space-y-3">
-                  {colTasks.map((task) => (
-                    <div key={task.id} className="bg-secondary/50 rounded-lg p-3 space-y-2 cursor-pointer hover:bg-secondary/80 transition-colors">
-                      <div className="flex items-start gap-2">
-                        <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{task.title}</p>
-                          {task.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[task.priority]}`}>{task.priority}</span>
-                        <Select value={task.status} onValueChange={(v) => handleTaskStatusChange(task.id, v)}>
-                          <SelectTrigger className="h-6 w-24 text-xs border-0 bg-transparent"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} />
       </div>
     );
   }
@@ -203,9 +150,7 @@ const ProjectsPage = () => {
                 <Label>Client</Label>
                 <Select value={form.client_id} onValueChange={v => setForm(p => ({ ...p, client_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select client..." /></SelectTrigger>
-                  <SelectContent>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -241,11 +186,7 @@ const ProjectsPage = () => {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <div
-              key={project.id}
-              className="glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer"
-              onClick={() => setSelectedProject(project.id)}
-            >
+            <div key={project.id} className="glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer" onClick={() => setSelectedProject(project.id)}>
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-display font-bold">{project.name}</h3>
                 <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[project.priority]}`}>{project.priority}</span>
@@ -257,11 +198,9 @@ const ProjectsPage = () => {
                   project.status === "completed" ? "bg-green-500/10 text-green-400" :
                   project.status === "in_progress" ? "bg-primary/10 text-primary" :
                   "bg-muted text-muted-foreground"
-                }`}>{project.status.replace("_", " ")}</span>
+                }`}>{(project.status || "planning").replace("_", " ")}</span>
               </div>
-              {project.due_date && (
-                <p className="text-xs text-muted-foreground mt-2">Due: {new Date(project.due_date).toLocaleDateString()}</p>
-              )}
+              {project.due_date && <p className="text-xs text-muted-foreground mt-2">Due: {new Date(project.due_date).toLocaleDateString()}</p>}
             </div>
           ))}
         </div>

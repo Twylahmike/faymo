@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import FileUpload from "./FileUpload";
 
 interface AddPostDialogProps {
   contentPlanId: string;
@@ -25,6 +26,7 @@ const AddPostDialog = ({ contentPlanId, onPostAdded, children }: AddPostDialogPr
     caption: "",
     platform: "",
     scheduled_date: "",
+    media_url: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +43,7 @@ const AddPostDialog = ({ contentPlanId, onPostAdded, children }: AddPostDialogPr
       caption: form.caption.trim() || null,
       platform: form.platform || null,
       scheduled_date: form.scheduled_date || null,
+      media_url: form.media_url || null,
       status: "draft",
     });
     setLoading(false);
@@ -49,7 +52,7 @@ const AddPostDialog = ({ contentPlanId, onPostAdded, children }: AddPostDialogPr
       toast.error("Failed to add post");
     } else {
       toast.success("Post added!");
-      setForm({ title: "", caption: "", platform: "", scheduled_date: "" });
+      setForm({ title: "", caption: "", platform: "", scheduled_date: "", media_url: "" });
       setOpen(false);
       onPostAdded();
     }
@@ -80,6 +83,14 @@ const AddPostDialog = ({ contentPlanId, onPostAdded, children }: AddPostDialogPr
             <Textarea placeholder="Post caption/copy..." value={form.caption}
               onChange={(e) => setForm({ ...form, caption: e.target.value })}
               maxLength={2000} className="bg-secondary border-border resize-none" rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label>Media</Label>
+            <FileUpload
+              folder="content-posts"
+              accept="image/*,video/*"
+              onUpload={(url) => setForm({ ...form, media_url: url })}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
