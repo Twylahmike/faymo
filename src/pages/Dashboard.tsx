@@ -49,6 +49,10 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    fetchCreators();
+  }, [fetchCreators]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
