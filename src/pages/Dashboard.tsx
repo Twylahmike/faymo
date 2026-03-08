@@ -10,6 +10,8 @@ import AddClientDialog from "@/components/dashboard/AddClientDialog";
 import ContentPlanDialog from "@/components/dashboard/ContentPlanDialog";
 import AddPostDialog from "@/components/dashboard/AddPostDialog";
 import TeamManagement from "@/components/dashboard/TeamManagement";
+import AnalyticsView from "@/components/dashboard/AnalyticsView";
+import ContentCalendar from "@/components/dashboard/ContentCalendar";
 import {
   BarChart3, Users, MessageSquare, TrendingUp, LogOut, Sparkles, Bell,
   Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText, ShieldCheck,
@@ -173,6 +175,12 @@ const Dashboard = () => {
             <TabsTrigger value="creators" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4 mr-1" /> Creators
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <CalendarDays className="h-4 w-4 mr-1" /> Calendar
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BarChart3 className="h-4 w-4 mr-1" /> Analytics
+            </TabsTrigger>
             {role === "admin" && (
               <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <ShieldCheck className="h-4 w-4 mr-1" /> Team
@@ -335,6 +343,14 @@ const Dashboard = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+          {/* Calendar Tab */}
+          <TabsContent value="calendar">
+            <ContentCalendar contentPosts={contentPosts} clients={clients} contentPlans={contentPlans} />
+          </TabsContent>
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <AnalyticsView contentPosts={contentPosts} />
           </TabsContent>
           {/* Team Tab (Admin only) */}
           {role === "admin" && (
