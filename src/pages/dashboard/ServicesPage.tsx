@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, Plus, Search } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Briefcase, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const ServicesPage = () => {
@@ -15,6 +16,8 @@ const ServicesPage = () => {
   const [services, setServices] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", price: "", category: "", status: "active" });
 
   const fetchServices = useCallback(async () => {
@@ -28,12 +31,8 @@ const ServicesPage = () => {
   const handleAdd = async () => {
     if (!user || !form.name) return;
     const { error } = await supabase.from("services").insert({
-      name: form.name,
-      description: form.description || null,
-      price: parseFloat(form.price) || 0,
-      category: form.category || null,
-      status: form.status,
-      user_id: user.id,
+      name: form.name, description: form.description || null, price: parseFloat(form.price) || 0,
+      category: form.category || null, status: form.status, user_id: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Service added");
@@ -42,12 +41,58 @@ const ServicesPage = () => {
     fetchServices();
   };
 
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("services").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Service deleted");
+    fetchServices();
+  };
+
+  const openEdit = (s: any) => {
+    setEditId(s.id);
+    setForm({ name: s.name, description: s.description || "", price: String(s.price || 0), category: s.category || "", status: s.status || "active" });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editId) return;
+    const { error } = await supabase.from("services").update({
+      name: form.name, description: form.description || null, price: parseFloat(form.price) || 0,
+      category: form.category || null, status: form.status,
+    }).eq("id", editId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Service updated");
+    setEditOpen(false);
+    setForm({ name: "", description: "", price: "", category: "", status: "active" });
+    fetchServices();
+  };
+
   const filtered = services.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.category || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
+  const ServiceForm = ({ onSubmit, submitLabel }: { onSubmit: () => void; submitLabel: string }) => (
+    <div className="space-y-4">
+      <div><Label>Service Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
+      <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Price (KES)</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></div>
+        <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Marketing" /></div>
+      </div>
+      <div>
+        <Label>Status</Label>
+        <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <Button className="w-full" onClick={onSubmit}>{submitLabel}</Button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -63,31 +108,19 @@ const ServicesPage = () => {
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Service</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div><Label>Service Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
-              <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Price (KES)</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></div>
-                <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Marketing" /></div>
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="w-full" onClick={handleAdd}>Add Service</Button>
-            </div>
+            <DialogHeader><DialogTitle>Add New Service</DialogTitle></DialogHeader>
+            <ServiceForm onSubmit={handleAdd} submitLabel="Add Service" />
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Service</DialogTitle></DialogHeader>
+          <ServiceForm onSubmit={handleEdit} submitLabel="Save Changes" />
+        </DialogContent>
+      </Dialog>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -108,9 +141,27 @@ const ServicesPage = () => {
             <div key={service.id} className="glass-card rounded-xl p-5 transition-all hover:glow-border">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-display font-bold">{service.name}</h3>
-                <span className={`text-xs rounded-full px-2 py-0.5 ${service.status === "active" ? "bg-green-500/10 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                  {service.status}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs rounded-full px-2 py-0.5 mr-1 ${service.status === "active" ? "bg-green-500/10 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                    {service.status}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(service)}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {service.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(service.id)} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
               {service.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{service.description}</p>}
               <div className="flex items-center justify-between text-sm">
