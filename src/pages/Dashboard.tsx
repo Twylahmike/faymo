@@ -9,9 +9,10 @@ import AddCreatorDialog from "@/components/dashboard/AddCreatorDialog";
 import AddClientDialog from "@/components/dashboard/AddClientDialog";
 import ContentPlanDialog from "@/components/dashboard/ContentPlanDialog";
 import AddPostDialog from "@/components/dashboard/AddPostDialog";
+import TeamManagement from "@/components/dashboard/TeamManagement";
 import {
   BarChart3, Users, MessageSquare, TrendingUp, LogOut, Sparkles, Bell,
-  Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText,
+  Building2, CalendarDays, ChevronRight, CheckCircle2, Clock, FileText, ShieldCheck,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -172,6 +173,11 @@ const Dashboard = () => {
             <TabsTrigger value="creators" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4 mr-1" /> Creators
             </TabsTrigger>
+            {role === "admin" && (
+              <TabsTrigger value="team" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <ShieldCheck className="h-4 w-4 mr-1" /> Team
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Clients Tab */}
@@ -330,6 +336,12 @@ const Dashboard = () => {
               </div>
             )}
           </TabsContent>
+          {/* Team Tab (Admin only) */}
+          {role === "admin" && (
+            <TabsContent value="team">
+              <TeamManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
