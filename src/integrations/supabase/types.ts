@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      creators: {
+        Row: {
+          avatar_url: string | null
+          category: string | null
+          created_at: string
+          email: string | null
+          followers: number | null
+          handle: string | null
+          id: string
+          name: string
+          notes: string | null
+          platform: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string
+          email?: string | null
+          followers?: number | null
+          handle?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          platform?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string
+          email?: string | null
+          followers?: number | null
+          handle?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          platform?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
