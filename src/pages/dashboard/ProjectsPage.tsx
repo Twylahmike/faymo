@@ -1,10 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,25 +27,46 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [teamProfiles, setTeamProfiles] = useState<Record<string, string>>({});
+  const [teamMembers, setTeamMembers] = useState<{ user_id: string; display_name: string }[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const [projRes, clientRes, taskRes] = await Promise.all([
+    const [projRes, clientRes, taskRes, profileRes] = await Promise.all([
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("clients").select("id, name"),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id, display_name"),
     ]);
     setProjects(projRes.data || []);
     setClients(clientRes.data || []);
     setTasks(taskRes.data || []);
+    if (profileRes.data) {
+      const map: Record<string, string> = {};
+      profileRes.data.forEach(p => { map[p.user_id] = p.display_name || "User"; });
+      setTeamProfiles(map);
+      setTeamMembers(profileRes.data.map(p => ({ user_id: p.user_id, display_name: p.display_name || "User" })));
+    }
   }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Compute progress per project
+  const projectProgress = useMemo(() => {
+    const map: Record<string, number> = {};
+    projects.forEach(p => {
+      const pTasks = tasks.filter(t => t.project_id === p.id);
+      if (pTasks.length === 0) { map[p.id] = 0; return; }
+      const completed = pTasks.filter(t => t.status === "completed").length;
+      map[p.id] = Math.round((completed / pTasks.length) * 100);
+    });
+    return map;
+  }, [projects, tasks]);
 
   const handleAddProject = async () => {
     if (!user || !form.name) return;
@@ -63,11 +85,12 @@ const ProjectsPage = () => {
     if (!user || !taskForm.title || !selectedProject) return;
     const { error } = await supabase.from("tasks").insert({
       title: taskForm.title, description: taskForm.description || null,
-      project_id: selectedProject, priority: taskForm.priority, due_date: taskForm.due_date || null, created_by: user.id,
+      project_id: selectedProject, priority: taskForm.priority, due_date: taskForm.due_date || null,
+      assigned_to: taskForm.assigned_to || null, created_by: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Task added");
-    setTaskForm({ title: "", description: "", priority: "medium", due_date: "" });
+    setTaskForm({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
     setIsTaskOpen(false);
     fetchAll();
   };
@@ -80,6 +103,7 @@ const ProjectsPage = () => {
 
   const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
   const selectedProjectData = projects.find(p => p.id === selectedProject);
+  const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
 
   if (selectedProject && selectedProjectData) {
     return (
@@ -121,10 +145,33 @@ const ProjectsPage = () => {
                   </div>
                   <div><Label>Due Date</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(p => ({ ...p, due_date: e.target.value }))} /></div>
                 </div>
+                <div>
+                  <Label>Assign To</Label>
+                  <Select value={taskForm.assigned_to} onValueChange={v => setTaskForm(p => ({ ...p, assigned_to: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                    <SelectContent>
+                      {teamMembers.map(m => (
+                        <SelectItem key={m.user_id} value={m.user_id}>{m.display_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button className="w-full" onClick={handleAddTask}>Add Task</Button>
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Progress bar */}
+        <div className="glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Progress</span>
+            <span className="text-sm text-muted-foreground">{currentProgress}%</span>
+          </div>
+          <Progress value={currentProgress} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-1.5">
+            {projectTasks.filter(t => t.status === "completed").length} of {projectTasks.length} tasks completed
+          </p>
         </div>
 
         <Tabs defaultValue="kanban" className="space-y-4">
@@ -134,7 +181,7 @@ const ProjectsPage = () => {
             <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Chat</TabsTrigger>
           </TabsList>
           <TabsContent value="kanban">
-            <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} />
+            <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} teamProfiles={teamProfiles} />
           </TabsContent>
           <TabsContent value="gantt">
             <GanttChart tasks={projectTasks} />
@@ -204,24 +251,38 @@ const ProjectsPage = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <div key={project.id} className="glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer" onClick={() => setSelectedProject(project.id)}>
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-display font-bold">{project.name}</h3>
-                <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[project.priority]}`}>{project.priority}</span>
+          {projects.map((project) => {
+            const progress = projectProgress[project.id] || 0;
+            const pTasks = tasks.filter(t => t.project_id === project.id);
+            return (
+              <div key={project.id} className="glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer" onClick={() => setSelectedProject(project.id)}>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-display font-bold">{project.name}</h3>
+                  <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[project.priority]}`}>{project.priority}</span>
+                </div>
+                {project.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>}
+                {/* Progress bar */}
+                {pTasks.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-muted-foreground">{progress}% complete</span>
+                      <span className="text-[10px] text-muted-foreground">{pTasks.filter(t => t.status === "completed").length}/{pTasks.length}</span>
+                    </div>
+                    <Progress value={progress} className="h-1.5" />
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{clients.find(c => c.id === project.client_id)?.name || "No client"}</span>
+                  <span className={`rounded-full px-2 py-0.5 ${
+                    project.status === "completed" ? "bg-green-500/10 text-green-400" :
+                    project.status === "in_progress" ? "bg-primary/10 text-primary" :
+                    "bg-muted text-muted-foreground"
+                  }`}>{(project.status || "planning").replace("_", " ")}</span>
+                </div>
+                {project.due_date && <p className="text-xs text-muted-foreground mt-2">Due: {new Date(project.due_date).toLocaleDateString()}</p>}
               </div>
-              {project.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>}
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{clients.find(c => c.id === project.client_id)?.name || "No client"}</span>
-                <span className={`rounded-full px-2 py-0.5 ${
-                  project.status === "completed" ? "bg-green-500/10 text-green-400" :
-                  project.status === "in_progress" ? "bg-primary/10 text-primary" :
-                  "bg-muted text-muted-foreground"
-                }`}>{(project.status || "planning").replace("_", " ")}</span>
-              </div>
-              {project.due_date && <p className="text-xs text-muted-foreground mt-2">Due: {new Date(project.due_date).toLocaleDateString()}</p>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
