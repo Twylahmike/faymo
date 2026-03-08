@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +19,34 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
+      return;
+    }
+
+    // Fetch user role to determine redirect
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      navigate("/dashboard");
+      return;
+    }
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    setLoading(false);
+    const role = roleData?.role;
+
+    if (role === "client") {
+      navigate("/client-portal");
     } else {
+      // admin or worker → dashboard
       navigate("/dashboard");
     }
   };
@@ -73,7 +98,7 @@ const Login = () => {
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Want to register your agency?{" "}
           <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
         </p>
       </div>
