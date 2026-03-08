@@ -336,6 +336,12 @@ const Dashboard = () => {
               </div>
             )}
           </TabsContent>
+          {/* Team Tab (Admin only) */}
+          {role === "admin" && (
+            <TabsContent value="team">
+              <TeamManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
