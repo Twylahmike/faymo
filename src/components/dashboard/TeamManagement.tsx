@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Shield, ShieldCheck, User, Trash2 } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
+import { useUserRole } from "@/hooks/useUserRole";
+import AddTeamMemberDialog from "./AddTeamMemberDialog";
 
 interface TeamMember {
   user_id: string;
