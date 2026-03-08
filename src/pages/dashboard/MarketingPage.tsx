@@ -2,9 +2,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Megaphone, TrendingUp, MousePointerClick, Users } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContentCalendar from "@/components/dashboard/ContentCalendar";
 import AnalyticsView from "@/components/dashboard/AnalyticsView";
+import ReferralSystem from "@/components/dashboard/ReferralSystem";
+import LoyaltyPoints from "@/components/dashboard/LoyaltyPoints";
 
 const MarketingPage = () => {
   const { user } = useAuth();
@@ -42,7 +44,7 @@ const MarketingPage = () => {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Marketing</h1>
-        <p className="text-sm text-muted-foreground mt-1">Content performance and campaign analytics</p>
+        <p className="text-sm text-muted-foreground mt-1">Content performance, campaigns, and growth</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -59,12 +61,26 @@ const MarketingPage = () => {
         ))}
       </div>
 
-      <AnalyticsView contentPosts={contentPosts} />
-
-      <div>
-        <h2 className="font-display text-xl font-bold mb-4">Content Calendar</h2>
-        <ContentCalendar contentPosts={contentPosts} clients={clients} contentPlans={contentPlans} />
-      </div>
+      <Tabs defaultValue="analytics" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="referrals">Referrals</TabsTrigger>
+          <TabsTrigger value="loyalty">Loyalty Points</TabsTrigger>
+        </TabsList>
+        <TabsContent value="analytics">
+          <AnalyticsView contentPosts={contentPosts} />
+        </TabsContent>
+        <TabsContent value="calendar">
+          <ContentCalendar contentPosts={contentPosts} clients={clients} contentPlans={contentPlans} />
+        </TabsContent>
+        <TabsContent value="referrals">
+          <ReferralSystem />
+        </TabsContent>
+        <TabsContent value="loyalty">
+          <LoyaltyPoints />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
