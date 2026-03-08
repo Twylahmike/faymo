@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreditCard, Plus, Clock, AlertCircle, CheckCircle2, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+const CURRENCIES = ["KES", "USD", "EUR", "GBP", "UGX", "TZS", "NGN"];
+
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
   sent: "bg-blue-500/10 text-blue-400",
@@ -23,14 +26,15 @@ const statusColors: Record<string, string> = {
 
 const PaymentsPage = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [form, setForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "" });
-  const [editForm, setEditForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", status: "" });
+  const [form, setForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", currency: "KES", recurring_interval: "none" });
+  const [editForm, setEditForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", status: "", currency: "KES", recurring_interval: "none" });
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -50,11 +54,12 @@ const PaymentsPage = () => {
     const { error } = await supabase.from("invoices").insert({
       invoice_number: invoiceNumber, client_id: form.client_id, amount: parseFloat(form.amount),
       due_date: form.due_date || null, notes: form.notes || null, payment_method: form.payment_method || null,
+      currency: form.currency, recurring_interval: form.recurring_interval,
       status: "pending", created_by: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Invoice created");
-    setForm({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "" });
+    setForm({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", currency: "KES", recurring_interval: "none" });
     setIsOpen(false);
     fetchAll();
   };
@@ -65,6 +70,7 @@ const PaymentsPage = () => {
       client_id: editForm.client_id, amount: parseFloat(editForm.amount),
       due_date: editForm.due_date || null, notes: editForm.notes || null,
       payment_method: editForm.payment_method || null, status: editForm.status,
+      currency: editForm.currency, recurring_interval: editForm.recurring_interval,
     };
     if (editForm.status === "paid" && editingInvoice.status !== "paid") update.paid_at = new Date().toISOString();
     const { error } = await supabase.from("invoices").update(update).eq("id", editingInvoice.id);
@@ -87,6 +93,7 @@ const PaymentsPage = () => {
     setEditForm({
       client_id: inv.client_id, amount: String(inv.amount), due_date: inv.due_date || "",
       notes: inv.notes || "", payment_method: inv.payment_method || "", status: inv.status || "draft",
+      currency: inv.currency || "KES", recurring_interval: (inv as any).recurring_interval || "none",
     });
     setIsEditOpen(true);
   };
@@ -108,6 +115,27 @@ const PaymentsPage = () => {
     return clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       i.invoice_number.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  const CurrencySelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+
+  const RecurringSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">One-time</SelectItem>
+        <SelectItem value="weekly">Weekly</SelectItem>
+        <SelectItem value="monthly">Monthly</SelectItem>
+        <SelectItem value="quarterly">Quarterly</SelectItem>
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <div className="space-y-6">
@@ -134,22 +162,26 @@ const PaymentsPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Amount (KES) *</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><Label>Currency</Label><CurrencySelect value={form.currency} onChange={v => setForm(p => ({ ...p, currency: v }))} /></div>
+                <div><Label>Amount *</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
                 <div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} /></div>
               </div>
-              <div>
-                <Label>Payment Method</Label>
-                <Select value={form.payment_method} onValueChange={v => setForm(p => ({ ...p, payment_method: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mpesa">M-Pesa</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="stripe">Stripe</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Payment Method</Label>
+                  <Select value={form.payment_method} onValueChange={v => setForm(p => ({ ...p, payment_method: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mpesa">M-Pesa</SelectItem>
+                      <SelectItem value="paypal">PayPal</SelectItem>
+                      <SelectItem value="stripe">Stripe</SelectItem>
+                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Recurring</Label><RecurringSelect value={form.recurring_interval} onChange={v => setForm(p => ({ ...p, recurring_interval: v }))} /></div>
               </div>
               <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
               <Button className="w-full" onClick={handleAdd}>Create Invoice</Button>
@@ -172,11 +204,12 @@ const PaymentsPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Amount (KES) *</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm(p => ({ ...p, amount: e.target.value }))} /></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div><Label>Currency</Label><CurrencySelect value={editForm.currency} onChange={v => setEditForm(p => ({ ...p, currency: v }))} /></div>
+              <div><Label>Amount *</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm(p => ({ ...p, amount: e.target.value }))} /></div>
               <div><Label>Due Date</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(p => ({ ...p, due_date: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label>Payment Method</Label>
                 <Select value={editForm.payment_method} onValueChange={v => setEditForm(p => ({ ...p, payment_method: v }))}>
@@ -204,6 +237,7 @@ const PaymentsPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div><Label>Recurring</Label><RecurringSelect value={editForm.recurring_interval} onChange={v => setEditForm(p => ({ ...p, recurring_interval: v }))} /></div>
             </div>
             <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button className="w-full" onClick={handleEdit}>Save Changes</Button>
@@ -212,29 +246,31 @@ const PaymentsPage = () => {
       </Dialog>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="glass-card rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-400/10"><CheckCircle2 className="h-4 w-4 text-green-400" /></div>
+      {isAdmin && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-400/10"><CheckCircle2 className="h-4 w-4 text-green-400" /></div>
+            </div>
+            <p className="font-display text-xl font-bold text-green-400">KES {totalReceived.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Total Received</p>
           </div>
-          <p className="font-display text-xl font-bold text-green-400">KES {totalReceived.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Received</p>
-        </div>
-        <div className="glass-card rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-yellow-400/10"><Clock className="h-4 w-4 text-yellow-400" /></div>
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-yellow-400/10"><Clock className="h-4 w-4 text-yellow-400" /></div>
+            </div>
+            <p className="font-display text-xl font-bold text-yellow-400">KES {totalPending.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Pending</p>
           </div>
-          <p className="font-display text-xl font-bold text-yellow-400">KES {totalPending.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Pending</p>
-        </div>
-        <div className="glass-card rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-400/10"><AlertCircle className="h-4 w-4 text-red-400" /></div>
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-400/10"><AlertCircle className="h-4 w-4 text-red-400" /></div>
+            </div>
+            <p className="font-display text-xl font-bold text-red-400">KES {totalOverdue.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Overdue</p>
           </div>
-          <p className="font-display text-xl font-bold text-red-400">KES {totalOverdue.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Overdue</p>
         </div>
-      </div>
+      )}
 
       {/* Search */}
       <div className="relative max-w-sm">
@@ -261,6 +297,7 @@ const PaymentsPage = () => {
                 <TableHead>Amount</TableHead>
                 <TableHead>Due Date</TableHead>
                 <TableHead>Method</TableHead>
+                <TableHead>Recurring</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -270,9 +307,10 @@ const PaymentsPage = () => {
                 <TableRow key={inv.id}>
                   <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
                   <TableCell>{clients.find(c => c.id === inv.client_id)?.name || "—"}</TableCell>
-                  <TableCell className="font-display font-bold">KES {Number(inv.amount).toLocaleString()}</TableCell>
+                  <TableCell className="font-display font-bold">{inv.currency || "KES"} {Number(inv.amount).toLocaleString()}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell className="text-sm capitalize">{inv.payment_method?.replace("_", " ") || "—"}</TableCell>
+                  <TableCell className="text-sm capitalize">{(inv as any).recurring_interval === "none" || !(inv as any).recurring_interval ? "—" : (inv as any).recurring_interval}</TableCell>
                   <TableCell>
                     <span className={`text-xs rounded-full px-2.5 py-1 ${statusColors[inv.status]}`}>{inv.status}</span>
                   </TableCell>
@@ -292,23 +330,25 @@ const PaymentsPage = () => {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(inv)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Invoice {inv.invoice_number}?</AlertDialogTitle>
-                            <AlertDialogDescription>This will permanently delete this invoice. This cannot be undone.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDelete(inv.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Invoice {inv.invoice_number}?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently delete this invoice. This cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDelete(inv.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

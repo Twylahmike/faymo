@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const priorityColors: Record<string, string> = {
 
 const ProjectsPage = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -98,7 +100,6 @@ const ProjectsPage = () => {
   };
 
   const handleDeleteProject = async (id: string) => {
-    // Delete tasks first, then the project
     await supabase.from("tasks").delete().eq("project_id", id);
     await supabase.from("project_comments").delete().eq("project_id", id);
     const { error } = await supabase.from("projects").delete().eq("id", id);
@@ -138,6 +139,24 @@ const ProjectsPage = () => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
+  const handleTaskUpdate = async (taskId: string, data: { title: string; description: string; priority: string; due_date: string; assigned_to: string }) => {
+    const { error } = await supabase.from("tasks").update({
+      title: data.title, description: data.description || null,
+      priority: data.priority, due_date: data.due_date || null,
+      assigned_to: data.assigned_to || null,
+    }).eq("id", taskId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Task updated");
+    fetchAll();
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Task deleted");
+    fetchAll();
+  };
+
   const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
   const selectedProjectData = projects.find(p => p.id === selectedProject);
   const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
@@ -162,23 +181,25 @@ const ProjectsPage = () => {
             <Button variant="outline" size="sm" onClick={(e) => openEditDialog(selectedProjectData, e)}>
               <Pencil className="h-4 w-4 mr-1" /> Edit
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-1" /> Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Project?</AlertDialogTitle>
-                  <AlertDialogDescription>This will permanently delete the project and all its tasks and comments. This cannot be undone.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteProject(selectedProjectData.id)}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+                    <AlertDialogDescription>This will permanently delete the project and all its tasks and comments. This cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteProject(selectedProjectData.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="rounded-full"><Plus className="h-4 w-4 mr-1" /> Add Task</Button>
@@ -239,7 +260,14 @@ const ProjectsPage = () => {
             <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Chat</TabsTrigger>
           </TabsList>
           <TabsContent value="kanban">
-            <KanbanBoard tasks={projectTasks} onStatusChange={handleTaskStatusChange} teamProfiles={teamProfiles} />
+            <KanbanBoard
+              tasks={projectTasks}
+              onStatusChange={handleTaskStatusChange}
+              onTaskUpdate={handleTaskUpdate}
+              onTaskDelete={handleTaskDelete}
+              teamProfiles={teamProfiles}
+              teamMembers={teamMembers}
+            />
           </TabsContent>
           <TabsContent value="gantt">
             <GanttChart tasks={projectTasks} />
@@ -370,23 +398,25 @@ const ProjectsPage = () => {
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => openEditDialog(project, e)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete "{project.name}"?</AlertDialogTitle>
-                          <AlertDialogDescription>This will permanently delete this project and all its tasks. This cannot be undone.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteProject(project.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{project.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete this project and all its tasks. This cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteProject(project.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
                 {project.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>}
