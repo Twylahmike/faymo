@@ -83,7 +83,14 @@ const ProjectsPage = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  useEffect(() => {
+    // reset selection when switching projects
+    setSelectedTasks(new Set());
+  }, [selectedProject]);
 
   const projectProgress = useMemo(() => {
     const map: Record<string, number> = {};
