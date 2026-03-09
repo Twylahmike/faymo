@@ -182,12 +182,86 @@ const ProjectsPage = () => {
 
   const handleTaskDelete = async (taskId: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", taskId);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Task deleted");
     fetchAll();
   };
 
+  // Bulk actions (table view)
+  const toggleTaskSelect = (id: string) => {
+    setSelectedTasks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTaskAll = () => {
+    if (selectedProjectTasks.length === 0) return;
+    if (selectedTasks.size === selectedProjectTasks.length) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(selectedProjectTasks.map(t => t.id)));
+    }
+  };
+
+  const handleBulkTaskStatus = async (status: "todo" | "in_progress" | "completed") => {
+    const ids = Array.from(selectedTasks);
+    if (ids.length === 0) return;
+
+    const { error } = await supabase.from("tasks").update({ status }).in("id", ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${ids.length} tasks updated`);
+    setSelectedTasks(new Set());
+    fetchAll();
+  };
+
+  const handleBulkTaskDelete = async () => {
+    const ids = Array.from(selectedTasks);
+    if (ids.length === 0) return;
+
+    const { error } = await supabase.from("tasks").delete().in("id", ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${ids.length} tasks deleted`);
+    setSelectedTasks(new Set());
+    fetchAll();
+  };
+
+  const handleBulkTaskExport = () => {
+    const ids = Array.from(selectedTasks);
+    const rows = selectedProjectTasks.filter(t => ids.includes(t.id));
+
+    const csv = ["Title,Status,Priority,Due Date,Assigned To,Created"].concat(
+      rows.map(t => {
+        const assignee = t.assigned_to ? (teamProfiles[t.assigned_to] || t.assigned_to) : "";
+        const due = t.due_date || "";
+        return `"${String(t.title).replaceAll('"', '""')}",${t.status || "todo"},${t.priority || ""},${due},"${assignee}",${t.created_at}`;
+      }),
+    ).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tasks-export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported!");
+  };
+
   const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
+  const selectedProjectTasks = projectTasks;
   const selectedProjectData = projects.find(p => p.id === selectedProject);
   const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
 
