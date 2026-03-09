@@ -62,6 +62,7 @@ const ProjectsPage = () => {
   const [form, setForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "" });
   const [editForm, setEditForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "", status: "planning" });
   const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
