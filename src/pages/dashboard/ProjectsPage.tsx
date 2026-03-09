@@ -190,6 +190,11 @@ const ProjectsPage = () => {
     fetchAll();
   };
 
+  const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
+  const selectedProjectTasks = projectTasks;
+  const selectedProjectData = projects.find(p => p.id === selectedProject);
+  const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
+
   // Bulk actions (table view)
   const toggleTaskSelect = (id: string) => {
     setSelectedTasks(prev => {
