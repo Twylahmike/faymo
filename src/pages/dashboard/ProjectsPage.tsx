@@ -7,11 +7,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, Plus, LayoutGrid, GanttChart as GanttIcon, MessageSquare, Pencil, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Plus,
+  LayoutGrid,
+  ListTodo,
+  FileDown,
+  GanttChart as GanttIcon,
+  MessageSquare,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
 import GanttChart from "@/components/dashboard/GanttChart";
@@ -40,6 +62,7 @@ const ProjectsPage = () => {
   const [form, setForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "" });
   const [editForm, setEditForm] = useState({ name: "", description: "", client_id: "", priority: "medium", start_date: "", due_date: "", status: "planning" });
   const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -60,7 +83,14 @@ const ProjectsPage = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  useEffect(() => {
+    // reset selection when switching projects
+    setSelectedTasks(new Set());
+  }, [selectedProject]);
 
   const projectProgress = useMemo(() => {
     const map: Record<string, number> = {};
@@ -152,14 +182,89 @@ const ProjectsPage = () => {
 
   const handleTaskDelete = async (taskId: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", taskId);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Task deleted");
     fetchAll();
   };
 
   const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
+  const selectedProjectTasks = projectTasks;
   const selectedProjectData = projects.find(p => p.id === selectedProject);
   const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
+
+  // Bulk actions (table view)
+  const toggleTaskSelect = (id: string) => {
+    setSelectedTasks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTaskAll = () => {
+    if (selectedProjectTasks.length === 0) return;
+    if (selectedTasks.size === selectedProjectTasks.length) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(selectedProjectTasks.map(t => t.id)));
+    }
+  };
+
+  const handleBulkTaskStatus = async (status: "todo" | "in_progress" | "completed") => {
+    const ids = Array.from(selectedTasks);
+    if (ids.length === 0) return;
+
+    const { error } = await supabase.from("tasks").update({ status }).in("id", ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${ids.length} tasks updated`);
+    setSelectedTasks(new Set());
+    fetchAll();
+  };
+
+  const handleBulkTaskDelete = async () => {
+    const ids = Array.from(selectedTasks);
+    if (ids.length === 0) return;
+
+    const { error } = await supabase.from("tasks").delete().in("id", ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${ids.length} tasks deleted`);
+    setSelectedTasks(new Set());
+    fetchAll();
+  };
+
+  const handleBulkTaskExport = () => {
+    const ids = Array.from(selectedTasks);
+    const rows = selectedProjectTasks.filter(t => ids.includes(t.id));
+
+    const csv = ["Title,Status,Priority,Due Date,Assigned To,Created"].concat(
+      rows.map(t => {
+        const assignee = t.assigned_to ? (teamProfiles[t.assigned_to] || t.assigned_to) : "";
+        const due = t.due_date || "";
+        const safeTitle = String(t.title).replace(/"/g, '""');
+        return `"${safeTitle}",${t.status || "todo"},${t.priority || ""},${due},"${assignee}",${t.created_at}`;
+      }),
+    ).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tasks-export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported!");
+  };
 
   if (selectedProject && selectedProjectData) {
     return (
@@ -255,10 +360,20 @@ const ProjectsPage = () => {
 
         <Tabs defaultValue="kanban" className="space-y-4">
           <TabsList className="bg-secondary/50">
-            <TabsTrigger value="kanban" className="gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Kanban</TabsTrigger>
-            <TabsTrigger value="gantt" className="gap-1.5"><GanttIcon className="h-3.5 w-3.5" /> Timeline</TabsTrigger>
-            <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Chat</TabsTrigger>
+            <TabsTrigger value="kanban" className="gap-1.5">
+              <LayoutGrid className="h-3.5 w-3.5" /> Kanban
+            </TabsTrigger>
+            <TabsTrigger value="table" className="gap-1.5">
+              <ListTodo className="h-3.5 w-3.5" /> Table
+            </TabsTrigger>
+            <TabsTrigger value="gantt" className="gap-1.5">
+              <GanttIcon className="h-3.5 w-3.5" /> Timeline
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> Chat
+            </TabsTrigger>
           </TabsList>
+
           <TabsContent value="kanban">
             <KanbanBoard
               tasks={projectTasks}
@@ -269,9 +384,110 @@ const ProjectsPage = () => {
               teamMembers={teamMembers}
             />
           </TabsContent>
+
+          <TabsContent value="table" className="space-y-3">
+            {selectedTasks.size > 0 && (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-sm text-muted-foreground">{selectedTasks.size} selected</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select onValueChange={(v) => handleBulkTaskStatus(v as any)}>
+                    <SelectTrigger className="h-8 w-36 text-xs">
+                      <SelectValue placeholder="Set status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todo">Mark Todo</SelectItem>
+                      <SelectItem value="in_progress">Mark In Progress</SelectItem>
+                      <SelectItem value="completed">Mark Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button variant="outline" size="sm" onClick={handleBulkTaskExport}>
+                    <FileDown className="h-3.5 w-3.5 mr-1" /> Export
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive border-destructive/30">
+                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedTasks.size} tasks?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleBulkTaskDelete}>
+                          Delete All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            )}
+
+            {selectedProjectTasks.length === 0 ? (
+              <div className="glass-card rounded-xl p-10 text-center">
+                <p className="text-sm text-muted-foreground">No tasks yet.</p>
+              </div>
+            ) : (
+              <div className="glass-card rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedTasks.size === selectedProjectTasks.length && selectedProjectTasks.length > 0}
+                          onCheckedChange={toggleTaskAll}
+                        />
+                      </TableHead>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedProjectTasks.map((t) => (
+                      <TableRow key={t.id} data-state={selectedTasks.has(t.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox checked={selectedTasks.has(t.id)} onCheckedChange={() => toggleTaskSelect(t.id)} />
+                        </TableCell>
+                        <TableCell className="font-medium">{t.title}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {t.assigned_to ? (teamProfiles[t.assigned_to] || "—") : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[t.priority || "medium"] || priorityColors.medium}`}>{t.priority || "medium"}</span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{t.due_date ? new Date(t.due_date).toLocaleDateString() : "—"}</TableCell>
+                        <TableCell>
+                          <Select value={t.status || "todo"} onValueChange={(v) => handleTaskStatusChange(t.id, v)}>
+                            <SelectTrigger className="h-8 w-36 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todo">Todo</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+
           <TabsContent value="gantt">
             <GanttChart tasks={projectTasks} />
           </TabsContent>
+
           <TabsContent value="chat">
             <ProjectComments projectId={selectedProject} />
           </TabsContent>
