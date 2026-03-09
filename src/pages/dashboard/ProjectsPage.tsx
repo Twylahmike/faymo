@@ -246,7 +246,8 @@ const ProjectsPage = () => {
       rows.map(t => {
         const assignee = t.assigned_to ? (teamProfiles[t.assigned_to] || t.assigned_to) : "";
         const due = t.due_date || "";
-        return `"${String(t.title).replaceAll('"', '""')}",${t.status || "todo"},${t.priority || ""},${due},"${assignee}",${t.created_at}`;
+        const safeTitle = String(t.title).replace(/"/g, '""');
+        return `"${safeTitle}",${t.status || "todo"},${t.priority || ""},${due},"${assignee}",${t.created_at}`;
       }),
     ).join("\n");
 
