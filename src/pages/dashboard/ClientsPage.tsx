@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Building2, ChevronRight, Phone, Mail, FileText, CheckCircle2, Clock, Briefcase, Trash2, Pencil, DollarSign } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Building2, ChevronRight, Phone, Mail, FileText, CheckCircle2, Clock, Briefcase, Trash2, Pencil, DollarSign, FileDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +47,7 @@ const ClientsPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", company: "", email: "", phone: "", notes: "" });
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const fetchClients = useCallback(async () => {
     if (!user) return;
@@ -125,6 +127,46 @@ const ClientsPage = () => {
       email: selectedClientData.email || "", phone: selectedClientData.phone || "", notes: selectedClientData.notes || "",
     });
     setEditOpen(true);
+  };
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(c => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("clients").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${ids.length} clients deleted`);
+    setSelected(new Set());
+    fetchClients();
+  };
+
+  const handleBulkExport = () => {
+    const ids = Array.from(selected);
+    const rows = clients.filter(c => ids.includes(c.id));
+    const csv = ["Name,Company,Email,Phone,Created"]
+      .concat(rows.map(c => `"${c.name}","${c.company || ""}","${c.email || ""}","${c.phone || ""}","${c.created_at}"`))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "clients-export.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported!");
   };
 
   if (selectedClient && selectedClientData) {
@@ -352,9 +394,35 @@ const ClientsPage = () => {
         <AddClientDialog onClientAdded={fetchClients} />
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search clients..." className="pl-9 bg-secondary/50 border-border/50" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      {/* Search + Bulk Actions */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search clients..." className="pl-9 bg-secondary/50 border-border/50" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">{selected.size} selected</span>
+            <Button variant="outline" size="sm" onClick={handleBulkExport}><FileDown className="h-3.5 w-3.5 mr-1" /> Export</Button>
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive border-destructive/30"><Trash2 className="h-3.5 w-3.5 mr-1" /> Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selected.size} clients?</AlertDialogTitle>
+                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleBulkDelete}>Delete All</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -368,28 +436,50 @@ const ClientsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((client) => (
-            <div
-              key={client.id}
-              className="glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer"
-              onClick={() => {
-                setSelectedClient(client.id);
-                fetchContentPlans(client.id);
-                fetchContentPosts();
-                fetchClientDetails(client.id);
-              }}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-display font-bold">{client.name}</h3>
-                  {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
+        <div className="space-y-2">
+          {/* Select All */}
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              checked={selected.size === filtered.length && filtered.length > 0}
+              onCheckedChange={toggleAll}
+            />
+            <span className="text-xs text-muted-foreground">Select all</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((client) => (
+              <div
+                key={client.id}
+                className={`glass-card rounded-xl p-5 transition-all hover:glow-border cursor-pointer ${selected.has(client.id) ? "ring-1 ring-primary" : ""}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={selected.has(client.id)}
+                    onCheckedChange={() => toggleSelect(client.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1"
+                  />
+                  <div
+                    className="flex-1 min-w-0"
+                    onClick={() => {
+                      setSelectedClient(client.id);
+                      fetchContentPlans(client.id);
+                      fetchContentPosts();
+                      fetchClientDetails(client.id);
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-display font-bold">{client.name}</h3>
+                        {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">{client.email}</p>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">{client.email}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
