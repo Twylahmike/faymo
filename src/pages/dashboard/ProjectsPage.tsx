@@ -266,11 +266,6 @@ const ProjectsPage = () => {
     toast.success("Exported!");
   };
 
-  const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject) : [];
-  const selectedProjectTasks = projectTasks;
-  const selectedProjectData = projects.find(p => p.id === selectedProject);
-  const currentProgress = selectedProject ? (projectProgress[selectedProject] || 0) : 0;
-
   if (selectedProject && selectedProjectData) {
     return (
       <div className="space-y-6">
