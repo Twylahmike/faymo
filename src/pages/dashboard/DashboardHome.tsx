@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Building2, Users, CalendarDays, TrendingUp, DollarSign, Briefcase, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
+import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
 
 const DashboardHome = () => {
   const { user } = useAuth();
@@ -13,6 +14,27 @@ const DashboardHome = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (!user) return;
+    const meta = user.user_metadata;
+    const completed = meta?.onboarding_completed === true;
+    // Only show onboarding for admins (agency owners) who haven't completed it
+    if (!completed && isAdmin) {
+      // Also check if they already have data (existing user)
+      supabase.from("clients").select("id", { count: "exact", head: true }).then(({ count }) => {
+        if ((count || 0) === 0) {
+          setShowOnboarding(true);
+        }
+        setCheckingOnboarding(false);
+      });
+    } else {
+      setCheckingOnboarding(false);
+    }
+  }, [user, isAdmin]);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -36,9 +58,15 @@ const DashboardHome = () => {
     setRecentActivity(activityRes.data || []);
   }, [user]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => { if (!showOnboarding) fetchStats(); }, [fetchStats, showOnboarding]);
 
-  const revenueData = useMemo(() => {
+  // Show onboarding wizard
+  if (checkingOnboarding) return null;
+  if (showOnboarding) {
+    return <OnboardingWizard onComplete={() => { setShowOnboarding(false); fetchStats(); }} />;
+  }
+
+  const revenueData = (() => {
     const monthMap: Record<string, { revenue: number; expenses: number }> = {};
     invoices.forEach(inv => {
       const month = inv.paid_at ? format(parseISO(inv.paid_at), "MMM yyyy") : (inv.created_at ? format(parseISO(inv.created_at), "MMM yyyy") : null);
@@ -47,9 +75,9 @@ const DashboardHome = () => {
       if (inv.status === "paid") monthMap[month].revenue += Number(inv.amount);
     });
     return Object.entries(monthMap).map(([month, data]) => ({ month, ...data })).slice(-6);
-  }, [invoices]);
+  })();
 
-  const projectStatus = useMemo(() => {
+  const projectStatus = (() => {
     const counts: Record<string, number> = {};
     projects.forEach(p => {
       const s = p.status || "planning";
@@ -66,9 +94,8 @@ const DashboardHome = () => {
       value,
       color: colorMap[name] || "hsl(var(--muted-foreground))",
     }));
-  }, [projects]);
+  })();
 
-  // Workers see fewer stat cards (no revenue)
   const statCards = isAdmin ? [
     { label: "Total Clients", value: stats.clients, icon: Building2, color: "text-blue-400", bg: "bg-blue-400/10" },
     { label: "Creators", value: stats.creators, icon: Users, color: "text-amber-400", bg: "bg-amber-400/10" },

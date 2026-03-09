@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, Plus, Clock, AlertCircle, CheckCircle2, Search, Pencil, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Clock, AlertCircle, CheckCircle2, Search, Pencil, Trash2, Download, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
 
 const CURRENCIES = ["KES", "USD", "EUR", "GBP", "UGX", "TZS", "NGN"];
 
@@ -33,17 +35,21 @@ const PaymentsPage = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", currency: "KES", recurring_interval: "none" });
   const [editForm, setEditForm] = useState({ client_id: "", amount: "", due_date: "", notes: "", payment_method: "", status: "", currency: "KES", recurring_interval: "none" });
+  const [profileName, setProfileName] = useState("");
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const [invRes, clientRes] = await Promise.all([
+    const [invRes, clientRes, profileRes] = await Promise.all([
       supabase.from("invoices").select("*").order("created_at", { ascending: false }),
-      supabase.from("clients").select("id, name"),
+      supabase.from("clients").select("id, name, email"),
+      supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
     ]);
     setInvoices(invRes.data || []);
     setClients(clientRes.data || []);
+    setProfileName(profileRes.data?.display_name || "Your Agency");
   }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -104,6 +110,76 @@ const PaymentsPage = () => {
     const { error } = await supabase.from("invoices").update(update).eq("id", id);
     if (error) { toast.error(error.message); return; }
     fetchAll();
+  };
+
+  const handleDownloadPdf = (inv: any) => {
+    const client = clients.find(c => c.id === inv.client_id);
+    generateInvoicePdf({
+      invoiceNumber: inv.invoice_number,
+      clientName: client?.name || "Client",
+      clientEmail: client?.email,
+      amount: Number(inv.amount),
+      currency: inv.currency || "KES",
+      dueDate: inv.due_date,
+      status: inv.status,
+      paymentMethod: inv.payment_method,
+      notes: inv.notes,
+      createdAt: inv.created_at,
+      agencyName: profileName,
+    });
+  };
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(i => i.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("invoices").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${ids.length} invoices deleted`);
+    setSelected(new Set());
+    fetchAll();
+  };
+
+  const handleBulkStatus = async (status: string) => {
+    const ids = Array.from(selected);
+    const update: any = { status };
+    if (status === "paid") update.paid_at = new Date().toISOString();
+    const { error } = await supabase.from("invoices").update(update).in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${ids.length} invoices updated to ${status}`);
+    setSelected(new Set());
+    fetchAll();
+  };
+
+  const handleBulkExport = () => {
+    const ids = Array.from(selected);
+    const rows = invoices.filter(i => ids.includes(i.id));
+    const csv = ["Invoice #,Client,Amount,Currency,Status,Due Date,Created"]
+      .concat(rows.map(i => {
+        const cn = clients.find(c => c.id === i.client_id)?.name || "";
+        return `${i.invoice_number},"${cn}",${i.amount},${i.currency || "KES"},${i.status},${i.due_date || ""},${i.created_at}`;
+      })).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "invoices-export.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported!");
   };
 
   const totalReceived = invoices.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.amount), 0);
@@ -272,10 +348,43 @@ const PaymentsPage = () => {
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search invoices..." className="pl-9 bg-secondary/50 border-border/50" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      {/* Search + Bulk Actions */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search invoices..." className="pl-9 bg-secondary/50 border-border/50" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">{selected.size} selected</span>
+            <Select onValueChange={handleBulkStatus}>
+              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Set status..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="paid">Mark Paid</SelectItem>
+                <SelectItem value="pending">Mark Pending</SelectItem>
+                <SelectItem value="cancelled">Cancel</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleBulkExport}><FileDown className="h-3.5 w-3.5 mr-1" /> Export</Button>
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive border-destructive/30"><Trash2 className="h-3.5 w-3.5 mr-1" /> Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selected.size} invoices?</AlertDialogTitle>
+                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleBulkDelete}>Delete All</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Invoices Table */}
@@ -292,6 +401,12 @@ const PaymentsPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selected.size === filtered.length && filtered.length > 0}
+                    onCheckedChange={toggleAll}
+                  />
+                </TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Amount</TableHead>
@@ -304,7 +419,10 @@ const PaymentsPage = () => {
             </TableHeader>
             <TableBody>
               {filtered.map((inv) => (
-                <TableRow key={inv.id}>
+                <TableRow key={inv.id} data-state={selected.has(inv.id) ? "selected" : undefined}>
+                  <TableCell>
+                    <Checkbox checked={selected.has(inv.id)} onCheckedChange={() => toggleSelect(inv.id)} />
+                  </TableCell>
                   <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
                   <TableCell>{clients.find(c => c.id === inv.client_id)?.name || "—"}</TableCell>
                   <TableCell className="font-display font-bold">{inv.currency || "KES"} {Number(inv.amount).toLocaleString()}</TableCell>
@@ -316,6 +434,9 @@ const PaymentsPage = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Download PDF" onClick={() => handleDownloadPdf(inv)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
                       <Select value={inv.status} onValueChange={(v) => handleStatusChange(inv.id, v)}>
                         <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
