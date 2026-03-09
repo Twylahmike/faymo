@@ -360,10 +360,20 @@ const ProjectsPage = () => {
 
         <Tabs defaultValue="kanban" className="space-y-4">
           <TabsList className="bg-secondary/50">
-            <TabsTrigger value="kanban" className="gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Kanban</TabsTrigger>
-            <TabsTrigger value="gantt" className="gap-1.5"><GanttIcon className="h-3.5 w-3.5" /> Timeline</TabsTrigger>
-            <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Chat</TabsTrigger>
+            <TabsTrigger value="kanban" className="gap-1.5">
+              <LayoutGrid className="h-3.5 w-3.5" /> Kanban
+            </TabsTrigger>
+            <TabsTrigger value="table" className="gap-1.5">
+              <ListTodo className="h-3.5 w-3.5" /> Table
+            </TabsTrigger>
+            <TabsTrigger value="gantt" className="gap-1.5">
+              <GanttIcon className="h-3.5 w-3.5" /> Timeline
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> Chat
+            </TabsTrigger>
           </TabsList>
+
           <TabsContent value="kanban">
             <KanbanBoard
               tasks={projectTasks}
@@ -374,9 +384,110 @@ const ProjectsPage = () => {
               teamMembers={teamMembers}
             />
           </TabsContent>
+
+          <TabsContent value="table" className="space-y-3">
+            {selectedTasks.size > 0 && (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-sm text-muted-foreground">{selectedTasks.size} selected</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select onValueChange={(v) => handleBulkTaskStatus(v as any)}>
+                    <SelectTrigger className="h-8 w-36 text-xs">
+                      <SelectValue placeholder="Set status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todo">Mark Todo</SelectItem>
+                      <SelectItem value="in_progress">Mark In Progress</SelectItem>
+                      <SelectItem value="completed">Mark Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button variant="outline" size="sm" onClick={handleBulkTaskExport}>
+                    <FileDown className="h-3.5 w-3.5 mr-1" /> Export
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive border-destructive/30">
+                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedTasks.size} tasks?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleBulkTaskDelete}>
+                          Delete All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            )}
+
+            {selectedProjectTasks.length === 0 ? (
+              <div className="glass-card rounded-xl p-10 text-center">
+                <p className="text-sm text-muted-foreground">No tasks yet.</p>
+              </div>
+            ) : (
+              <div className="glass-card rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedTasks.size === selectedProjectTasks.length && selectedProjectTasks.length > 0}
+                          onCheckedChange={toggleTaskAll}
+                        />
+                      </TableHead>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedProjectTasks.map((t) => (
+                      <TableRow key={t.id} data-state={selectedTasks.has(t.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox checked={selectedTasks.has(t.id)} onCheckedChange={() => toggleTaskSelect(t.id)} />
+                        </TableCell>
+                        <TableCell className="font-medium">{t.title}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {t.assigned_to ? (teamProfiles[t.assigned_to] || "—") : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[t.priority || "medium"] || priorityColors.medium}`}>{t.priority || "medium"}</span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{t.due_date ? new Date(t.due_date).toLocaleDateString() : "—"}</TableCell>
+                        <TableCell>
+                          <Select value={t.status || "todo"} onValueChange={(v) => handleTaskStatusChange(t.id, v)}>
+                            <SelectTrigger className="h-8 w-36 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todo">Todo</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+
           <TabsContent value="gantt">
             <GanttChart tasks={projectTasks} />
           </TabsContent>
+
           <TabsContent value="chat">
             <ProjectComments projectId={selectedProject} />
           </TabsContent>
