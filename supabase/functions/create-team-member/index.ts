@@ -95,6 +95,27 @@ Deno.serve(async (req) => {
         .eq("user_id", newUser.user.id);
     }
 
+    // Record invite + audit log entry
+    await adminClient.from("member_invites").insert({
+      email,
+      display_name: name,
+      role: memberRole,
+      status: "active",
+      invited_by: caller.id,
+      user_id: newUser.user.id,
+      accepted_at: new Date().toISOString(),
+    });
+
+    await adminClient.from("audit_log").insert({
+      actor_id: caller.id,
+      actor_name: caller.email,
+      target_id: newUser.user.id,
+      target_name: name,
+      action: "created_member",
+      entity_type: "team_member",
+      details: { email, role: memberRole },
+    });
+
     return new Response(
       JSON.stringify({
         member: { user_id: newUser.user.id, display_name: name, email, role: memberRole },
