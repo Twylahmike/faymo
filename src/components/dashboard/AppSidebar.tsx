@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, UserCheck, CreditCard,
-  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Sparkles,
+  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Sparkles, FileText, ScrollText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -32,7 +32,12 @@ const mainNav = [
 
 const adminNav = [
   { title: "Team", url: "/dashboard/team", icon: ShieldCheck, color: "text-red-400" },
+  { title: "Audit Log", url: "/dashboard/audit-log", icon: ScrollText, color: "text-cyan-400" },
   { title: "Settings", url: "/dashboard/settings", icon: Settings, color: "text-muted-foreground" },
+];
+
+const memberNav = [
+  { title: "My Work", url: "/dashboard/my-work", icon: FileText, color: "text-cyan-400" },
 ];
 
 export function AppSidebar() {
@@ -41,6 +46,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { isWorker } = useUserRole();
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
@@ -87,6 +93,27 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isWorker && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {memberNav.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                      <NavLink to={item.url} className="hover:bg-accent/50"
+                        activeClassName="bg-accent text-accent-foreground font-medium">
+                        <item.icon className={`h-4 w-4 shrink-0 ${item.color}`} />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {isAdmin && (
           <SidebarGroup>
