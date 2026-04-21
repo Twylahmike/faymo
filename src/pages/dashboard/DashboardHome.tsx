@@ -6,6 +6,7 @@ import { Building2, Users, CalendarDays, TrendingUp, DollarSign, Briefcase, Chec
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
 import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
+import MemberOnboardingChecklist from "@/components/dashboard/MemberOnboardingChecklist";
 
 const DashboardHome = () => {
   const { user } = useAuth();
@@ -116,6 +117,8 @@ const DashboardHome = () => {
         <h1 className="font-display text-2xl font-bold">Dashboard Overview</h1>
         <p className="text-muted-foreground text-sm mt-1">Welcome back! Here's what's happening with your agency.</p>
       </div>
+
+      <MemberOnboardingChecklist />
 
       <div className={`grid gap-4 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-4"}`}>
         {statCards.map((stat) => (
