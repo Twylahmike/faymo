@@ -45,8 +45,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
-  const { isWorker } = useUserRole();
+  const { isAdmin, isWorker } = useUserRole();
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
