@@ -15,6 +15,7 @@ interface TeamMember {
   role: AppRole;
   display_name: string | null;
   email: string | null;
+  invite_status?: string | null;
 }
 
 const roleIcons: Record<AppRole, React.ReactNode> = {
@@ -41,20 +42,22 @@ const TeamManagement = () => {
       return;
     }
 
-    // Get profiles for those users
+    // Get profiles + invites in parallel
     const userIds = roles.map((r) => r.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, display_name")
-      .in("user_id", userIds);
+    const [{ data: profiles }, { data: invites }] = await Promise.all([
+      supabase.from("profiles").select("user_id, display_name").in("user_id", userIds),
+      supabase.from("member_invites").select("user_id, status, email").in("user_id", userIds),
+    ]);
 
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+    const inviteMap = new Map(invites?.map((i) => [i.user_id, i]) || []);
 
     const merged: TeamMember[] = roles.map((r) => ({
       user_id: r.user_id,
       role: r.role as AppRole,
       display_name: profileMap.get(r.user_id)?.display_name || null,
-      email: null,
+      email: inviteMap.get(r.user_id)?.email || null,
+      invite_status: inviteMap.get(r.user_id)?.status || null,
     }));
 
     setMembers(merged);
