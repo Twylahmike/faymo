@@ -154,6 +154,14 @@ const TeamManagement = () => {
                             <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                           )}
                         </p>
+                        {member.email && (
+                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                        )}
+                        {member.invite_status && member.user_id !== user?.id && (
+                          <span className="mt-1 inline-block text-[10px] uppercase tracking-wide rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5">
+                            {member.invite_status}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </TableCell>
