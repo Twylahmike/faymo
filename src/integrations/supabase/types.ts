@@ -49,6 +49,42 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_name: string | null
+          created_at: string
+          details: Json | null
+          entity_type: string
+          id: string
+          target_id: string | null
+          target_name: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_name?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_type: string
+          id?: string
+          target_id?: string | null
+          target_name?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_name?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_type?: string
+          id?: string
+          target_id?: string | null
+          target_name?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           agency_user_id: string
@@ -364,6 +400,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      member_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          display_name: string
+          email: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          display_name?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      member_onboarding: {
+        Row: {
+          created_at: string
+          dismissed: boolean
+          first_upload_completed: boolean
+          id: string
+          profile_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed?: boolean
+          first_upload_completed?: boolean
+          id?: string
+          profile_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed?: boolean
+          first_upload_completed?: boolean
+          id?: string
+          profile_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -686,6 +788,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      work_items: {
+        Row: {
+          created_at: string
+          deliverable_name: string | null
+          deliverable_url: string | null
+          description: string | null
+          id: string
+          member_id: string
+          project_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deliverable_name?: string | null
+          deliverable_url?: string | null
+          description?: string | null
+          id?: string
+          member_id: string
+          project_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deliverable_name?: string | null
+          deliverable_url?: string | null
+          description?: string | null
+          id?: string
+          member_id?: string
+          project_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
