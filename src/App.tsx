@@ -21,6 +21,8 @@ import MarketingPage from "./pages/dashboard/MarketingPage";
 import ReportsPage from "./pages/dashboard/ReportsPage";
 import TeamPage from "./pages/dashboard/TeamPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
+import MyWorkPage from "./pages/dashboard/MyWorkPage";
+import AuditLogPage from "./pages/dashboard/AuditLogPage";
 import ClientPortal from "./pages/ClientPortal";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -53,6 +55,8 @@ const App = () => (
                 <Route path="marketing" element={<MarketingPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="team" element={<TeamPage />} />
+                <Route path="my-work" element={<MyWorkPage />} />
+                <Route path="audit-log" element={<AuditLogPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/client-portal" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />

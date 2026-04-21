@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Shield, ShieldCheck, User, Trash2 } from "lucide-react";
+import { Shield, ShieldCheck, User, Trash2, Mail } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
 import { useUserRole } from "@/hooks/useUserRole";
 import AddTeamMemberDialog from "./AddTeamMemberDialog";
@@ -15,6 +15,7 @@ interface TeamMember {
   role: AppRole;
   display_name: string | null;
   email: string | null;
+  invite_status?: string | null;
 }
 
 const roleIcons: Record<AppRole, React.ReactNode> = {
@@ -41,20 +42,22 @@ const TeamManagement = () => {
       return;
     }
 
-    // Get profiles for those users
+    // Get profiles + invites in parallel
     const userIds = roles.map((r) => r.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, display_name")
-      .in("user_id", userIds);
+    const [{ data: profiles }, { data: invites }] = await Promise.all([
+      supabase.from("profiles").select("user_id, display_name").in("user_id", userIds),
+      supabase.from("member_invites").select("user_id, status, email").in("user_id", userIds),
+    ]);
 
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+    const inviteMap = new Map(invites?.map((i) => [i.user_id, i]) || []);
 
     const merged: TeamMember[] = roles.map((r) => ({
       user_id: r.user_id,
       role: r.role as AppRole,
       display_name: profileMap.get(r.user_id)?.display_name || null,
-      email: null,
+      email: inviteMap.get(r.user_id)?.email || null,
+      invite_status: inviteMap.get(r.user_id)?.status || null,
     }));
 
     setMembers(merged);
@@ -101,6 +104,15 @@ const TeamManagement = () => {
       toast.success("Team member removed");
       fetchMembers();
     }
+  };
+
+  const handleSendReset = async (email: string | null, name: string | null) => {
+    if (!email) { toast.error("No email on file for this member"); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) { toast.error("Failed to send reset link"); return; }
+    toast.success(`Password reset link sent to ${name || email}`);
   };
 
   if (loading) {
@@ -151,6 +163,14 @@ const TeamManagement = () => {
                             <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                           )}
                         </p>
+                        {member.email && (
+                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                        )}
+                        {member.invite_status && member.user_id !== user?.id && (
+                          <span className="mt-1 inline-block text-[10px] uppercase tracking-wide rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5">
+                            {member.invite_status}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -176,14 +196,17 @@ const TeamManagement = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     {member.user_id !== user?.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveMember(member.user_id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" title="Send password reset"
+                          onClick={() => handleSendReset(member.email, member.display_name)}>
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" title="Remove member"
+                          onClick={() => handleRemoveMember(member.user_id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
