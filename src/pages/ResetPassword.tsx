@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
+import { Orbit } from "lucide-react";
 import { toast } from "sonner";
 
 const ResetPassword = () => {
@@ -38,8 +38,8 @@ const ResetPassword = () => {
       <div className="absolute top-0 left-0 right-0 hero-glow h-96 pointer-events-none" />
       <div className="relative w-full max-w-sm">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <span className="font-display text-xl font-bold">F<span className="text-primary">🩵</span>ymo</span>
+          <Orbit className="h-6 w-6 text-primary" />
+          <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Set new password</h1>
         <p className="text-sm text-muted-foreground mb-8">Enter your new password below</p>

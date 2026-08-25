@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Sparkles, LogOut, CalendarDays, CheckCircle2, Clock, FileText,
+  Orbit, LogOut, CalendarDays, CheckCircle2, Clock, FileText,
   ThumbsUp, CreditCard, FolderOpen, Bell, ExternalLink, MessageSquare, Send,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -200,8 +200,8 @@ const ClientPortal = () => {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <span className="font-display text-xl font-bold">F<span className="text-primary">🩵</span>ymo</span>
+            <Orbit className="h-6 w-6 text-primary" />
+            <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

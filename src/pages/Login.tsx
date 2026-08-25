@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { Orbit, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -60,8 +60,8 @@ const Login = () => {
         </Link>
 
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <span className="font-display text-xl font-bold">F<span className="text-primary">🩵</span>ymo</span>
+          <Orbit className="h-6 w-6 text-primary" />
+          <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Welcome back</h1>
         <p className="text-sm text-muted-foreground mb-8">Sign in to your account</p>
@@ -98,8 +98,7 @@ const Login = () => {
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Want to register your agency?{" "}
-          <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
+          Access is by invitation only. Contact your ORION admin for login credentials.
         </p>
       </div>
     </div>
