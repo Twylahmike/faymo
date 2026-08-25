@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { Orbit, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,8 +36,8 @@ const ForgotPassword = () => {
           <ArrowLeft className="h-4 w-4" /> Back to login
         </Link>
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <span className="font-display text-xl font-bold">F<span className="text-primary">🩵</span>ymo</span>
+          <Orbit className="h-6 w-6 text-primary" />
+          <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Reset password</h1>
         <p className="text-sm text-muted-foreground mb-8">We'll send you a reset link</p>

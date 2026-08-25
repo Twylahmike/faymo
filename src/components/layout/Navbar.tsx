@@ -50,7 +50,7 @@ const Navbar = () => {
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate("/login")}>
                 Login
               </Button>
-              <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse-glow" onClick={() => navigate("/signup")}>
+              <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse-glow" onClick={() => navigate("/pricing")}>
                 Get Started
               </Button>
             </>
@@ -82,7 +82,7 @@ const Navbar = () => {
               ) : (
                 <>
                   <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { navigate("/login"); setIsOpen(false); }}>Login</Button>
-                  <Button size="sm" className="rounded-full bg-primary text-primary-foreground" onClick={() => { navigate("/signup"); setIsOpen(false); }}>Get Started</Button>
+                  <Button size="sm" className="rounded-full bg-primary text-primary-foreground" onClick={() => { navigate("/pricing"); setIsOpen(false); }}>Get Started</Button>
                 </>
               )}
             </div>
