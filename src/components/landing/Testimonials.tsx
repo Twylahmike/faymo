@@ -4,20 +4,20 @@ import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 const testimonials = [
   {
     name: "Sarah Chen",
-    role: "CEO, Talent Agency X",
-    content: "F🩵ymo completely transformed how we manage our creator roster. What used to take days now takes minutes.",
+    role: "CEO, Meridian Retail Group",
+    content: "ORION rebuilt our entire operations stack — AI agents, automation, dashboards. What used to take a full team now runs itself.",
     rating: 5,
   },
   {
     name: "Marcus Johnson",
-    role: "Brand Manager, StyleCo",
-    content: "The AI copilot alone saved us 20+ hours per week on campaign planning and creator matching. Absolutely incredible.",
+    role: "COO, StyleCo",
+    content: "Their automation agents alone saved us 20+ hours per week on sales follow-ups and reporting. Absolutely incredible.",
     rating: 5,
   },
   {
     name: "Elena Rossi",
-    role: "Influencer Marketing Lead",
-    content: "Finally, a platform that understands the creator economy. The analytics and workflow automation are unmatched.",
+    role: "Head of Growth, Horizon Labs",
+    content: "Finally, a technology partner that understands the whole business, not just the website. The AI and integrations are unmatched.",
     rating: 5,
   },
 ];

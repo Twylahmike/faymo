@@ -1,6 +1,6 @@
-# F🩵ymo Flow
+# 🌌 ORION
 
-replicate infloww.com features and user interface and evrything to "F🩵ymo"
+ORION builds intelligent digital systems that help businesses operate, automate, sell, and scale — an AI, automation, software, digital infrastructure, and technology consultancy.
 
 This project was built with [Lovable](https://lovable.dev).
 

@@ -13,19 +13,19 @@ const Hero = () => {
           {/* Badge */}
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Now in Public Beta
+            AI, Automation & Technology Consultancy
           </div>
 
           {/* Headline */}
           <h1 className="font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            Manage Your Creators.
+            Operate, Automate, Sell.
             <br />
-            <span className="text-gradient">Scale Your Impact.</span>
+            <span className="text-gradient">Scale With ORION.</span>
           </h1>
 
           {/* Subtext */}
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed sm:text-xl">
-            F🩵ymo is the all-in-one platform for agencies and brands to discover, manage, and collaborate with creators and influencers — powered by AI.
+            ORION builds intelligent digital systems — AI agents, automation, software, and digital infrastructure — that run the entire digital operation of your business.
           </p>
 
           {/* CTAs */}
@@ -34,7 +34,7 @@ const Hero = () => {
               size="lg"
               className="rounded-full bg-primary text-primary-foreground px-8 text-base font-semibold hover:bg-primary/90 animate-pulse-glow"
             >
-              Start Free Trial
+              Book a Strategy Call
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -43,16 +43,16 @@ const Hero = () => {
               className="rounded-full border-border/50 px-8 text-base hover:bg-secondary"
             >
               <Play className="mr-2 h-4 w-4" />
-              Watch Demo
+              See ORION in Action
             </Button>
           </div>
 
           {/* Stats */}
           <div className="mt-16 flex flex-wrap items-center justify-center gap-8 sm:gap-16">
             {[
-              { value: "10K+", label: "Creators Managed" },
-              { value: "500+", label: "Agencies" },
-              { value: "98%", label: "Satisfaction" },
+              { value: "50+", label: "Services Delivered" },
+              { value: "8", label: "Core Divisions" },
+              { value: "98%", label: "Client Satisfaction" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="font-display text-3xl font-bold text-gradient">{stat.value}</p>
@@ -73,9 +73,9 @@ const Hero = () => {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Active Campaigns", value: "24" },
-                  { label: "Total Reach", value: "4.2M" },
-                  { label: "Revenue", value: "$128K" },
+                  { label: "Active Automations", value: "24" },
+                  { label: "Tasks Automated", value: "4.2M" },
+                  { label: "Value Delivered", value: "$128K" },
                 ].map((item) => (
                   <div key={item.label} className="glass-card p-4 rounded-lg">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -96,7 +96,7 @@ const Hero = () => {
                   </div>
                 </div>
                 <div className="glass-card rounded-lg p-4 h-32 flex flex-col justify-between">
-                  {["Instagram", "TikTok", "YouTube"].map((platform) => (
+                  {["AI Agents", "Automation", "Integrations"].map((platform) => (
                     <div key={platform} className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">{platform}</span>
                       <div className="h-2 w-24 rounded-full bg-secondary overflow-hidden">

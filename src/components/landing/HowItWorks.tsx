@@ -1,24 +1,24 @@
-import { Search, Handshake, TrendingUp } from "lucide-react";
+import { Search, Cpu, Rocket } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 const steps = [
   {
     icon: Search,
     step: "01",
-    title: "Discover Creators",
-    description: "Search and filter through millions of creators by niche, audience, engagement rate, and more.",
+    title: "Audit & Strategy",
+    description: "We map your business processes, assess AI readiness, and design the systems that will move the needle first.",
   },
   {
-    icon: Handshake,
+    icon: Cpu,
     step: "02",
-    title: "Collaborate & Manage",
-    description: "Onboard creators, manage contracts, assign campaigns, and track deliverables — all in one place.",
+    title: "Build & Automate",
+    description: "We build the AI agents, software, and automations — then integrate them with the tools you already run on.",
   },
   {
-    icon: TrendingUp,
+    icon: Rocket,
     step: "03",
-    title: "Measure & Scale",
-    description: "Analyze campaign performance, optimize ROI, and scale your creator program with data-driven insights.",
+    title: "Deploy & Scale",
+    description: "We deploy to production and stay on as your managed technology partner — monitoring, improving, and expanding as you grow.",
   },
 ];
 
@@ -31,8 +31,8 @@ const HowItWorks = () => {
         <div className={`mx-auto max-w-2xl text-center mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <p className="text-sm font-medium text-primary mb-3 uppercase tracking-wider">How It Works</p>
           <h2 className="font-display text-3xl font-bold sm:text-4xl lg:text-5xl">
-            Three steps to{" "}
-            <span className="text-gradient">creator success</span>
+            Three steps to a{" "}
+            <span className="text-gradient">digital operating system</span>
           </h2>
         </div>
 

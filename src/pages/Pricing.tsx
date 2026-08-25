@@ -7,50 +7,64 @@ import PricingFAQ from "@/components/pricing/PricingFAQ";
 const plans = [
   {
     name: "Starter",
-    monthlyPrice: "Free",
-    yearlyPrice: "Free",
-    period: "",
-    description: "For individuals just getting started",
+    monthlyPrice: "$1,500",
+    yearlyPrice: "$1,200",
+    period: "mo",
+    description: "Website + AI chatbot + analytics",
     features: [
-      "Up to 10 creators",
-      "Basic analytics dashboard",
+      "Business or marketing website",
+      "AI chatbot for website & socials",
+      "Core analytics & tracking",
+      "Basic SEO setup",
       "Email support",
-      "1 team member",
-      "Community access",
     ],
-    cta: "Get Started Free",
+    cta: "Get Started",
   },
   {
-    name: "Pro",
-    monthlyPrice: "$49",
-    yearlyPrice: "$39",
+    name: "Growth",
+    monthlyPrice: "$4,500",
+    yearlyPrice: "$3,600",
     period: "mo",
-    description: "For growing agencies and brands",
+    description: "Website + CRM + automation + AI support",
     features: [
-      "Unlimited creators",
-      "Advanced analytics & reports",
-      "AI Copilot",
-      "Unified messaging inbox",
-      "Content vault (50GB)",
-      "Up to 10 team members",
+      "Everything in Starter",
+      "Custom CRM & sales pipeline",
+      "Sales & marketing automation",
+      "AI customer-support agent",
+      "Executive dashboards",
       "Priority support",
     ],
     popular: true,
-    cta: "Start Free Trial",
+    cta: "Start Growth Plan",
+  },
+  {
+    name: "Scale",
+    monthlyPrice: "$12,000",
+    yearlyPrice: "$9,600",
+    period: "mo",
+    description: "Custom software + AI agents + integrations",
+    features: [
+      "Everything in Growth",
+      "Custom software / SaaS platform",
+      "Multi-agent AI systems",
+      "Payment & third-party integrations",
+      "Data pipelines & forecasting",
+      "Dedicated account manager",
+    ],
+    cta: "Talk to Sales",
   },
   {
     name: "Enterprise",
     monthlyPrice: "Custom",
     yearlyPrice: "Custom",
     period: "",
-    description: "For large teams with custom needs",
+    description: "Complete digital transformation",
     features: [
-      "Everything in Pro",
-      "Custom integrations & API",
-      "Unlimited storage",
-      "SSO & advanced security",
-      "Dedicated account manager",
-      "Custom onboarding",
+      "Business audit & process mapping",
+      "AI & technology strategy",
+      "Custom infrastructure & security",
+      "Managed AI & automation (Managed Intelligence)",
+      "Team training & AI governance",
       "SLA guarantee",
     ],
     cta: "Contact Sales",
@@ -69,7 +83,7 @@ const Pricing = () => {
             Simple, transparent <span className="text-gradient">pricing</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Start free and scale as you grow. No hidden fees, no surprises.
+            From a single website to a full digital transformation — packages that grow with your business.
           </p>
 
           <div className="mt-10">
@@ -80,7 +94,7 @@ const Pricing = () => {
 
       <section className="pb-24">
         <div className="container mx-auto px-6">
-          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3 items-start">
+          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4 items-start">
             {plans.map((plan) => (
               <PricingCard
                 key={plan.name}
