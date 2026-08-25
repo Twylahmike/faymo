@@ -111,7 +111,7 @@ const Pricing = () => {
                 </ul>
                 <CustomRequestDialog>
                   <Button className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                    Request a Custom Quote
+                    Contact Sales
                   </Button>
                 </CustomRequestDialog>
               </div>

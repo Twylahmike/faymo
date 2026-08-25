@@ -14,11 +14,13 @@ interface CustomRequestDialogProps {
   presetMessage?: string;
 }
 
+const emptyForm = { name: "", email: "", company: "", phone: "", budget: "", preferredDate: "", preferredTime: "", message: "" };
+
 const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", company: "", phone: "", budget: "", message: presetMessage || "" });
+  const [form, setForm] = useState({ ...emptyForm, message: presetMessage || "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,8 @@ const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogPro
       company: form.company.trim() || null,
       phone: form.phone.trim() || null,
       budget: form.budget.trim() || null,
+      preferred_date: form.preferredDate || null,
+      preferred_time: form.preferredTime || null,
       message: form.message.trim(),
     });
     setLoading(false);
@@ -51,7 +55,7 @@ const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogPro
     if (!isOpen) {
       setTimeout(() => {
         setSubmitted(false);
-        setForm({ name: "", email: "", company: "", phone: "", budget: "", message: presetMessage || "" });
+        setForm({ ...emptyForm, message: presetMessage || "" });
       }, 200);
     }
   };
@@ -59,7 +63,7 @@ const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogPro
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         {submitted ? (
           <div className="py-6 text-center space-y-3">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -69,14 +73,14 @@ const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogPro
               <DialogTitle className="text-center">Request received</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
-              Thanks — our team will review your request and get back to you shortly.
+              Thanks — our team will review your request{form.preferredDate ? " and reach out around your preferred time" : ""}.
             </p>
             <Button className="w-full rounded-full" onClick={() => handleClose(false)}>Done</Button>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Tell us what you need</DialogTitle>
+              <DialogTitle>Talk to sales</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
               <div className="grid grid-cols-2 gap-3">
@@ -95,19 +99,28 @@ const CustomRequestDialog = ({ children, presetMessage }: CustomRequestDialogPro
                   <Input id="cr-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} maxLength={100} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cr-phone">Phone</Label>
-                  <Input id="cr-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} maxLength={20} />
+                  <Label htmlFor="cr-phone">Phone number</Label>
+                  <Input id="cr-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} maxLength={20} />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cr-budget">Budget (optional)</Label>
-                <Input id="cr-budget" placeholder="e.g. $5,000 - $10,000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} maxLength={100} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cr-message">What do you need? *</Label>
                 <Textarea id="cr-message" placeholder="Tell us about your project, goals, and timeline..."
                   value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
                   required maxLength={2000} rows={4} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cr-budget">Budget (optional)</Label>
+                <Input id="cr-budget" placeholder="e.g. $5,000 - $10,000" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} maxLength={100} />
+              </div>
+              <div className="space-y-2">
+                <Label>Preferred date &amp; time for a call (optional)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input aria-label="Preferred date" type="date" value={form.preferredDate}
+                    onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} />
+                  <Input aria-label="Preferred time" type="time" value={form.preferredTime}
+                    onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} />
+                </div>
               </div>
               <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground">
                 {loading ? "Submitting..." : "Submit Request"}

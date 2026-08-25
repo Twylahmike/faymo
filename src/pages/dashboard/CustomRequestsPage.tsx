@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Inbox, Mail, Phone, Building2 } from "lucide-react";
+import { Inbox, Mail, Phone, Building2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -12,6 +12,8 @@ interface CustomRequest {
   company: string | null;
   phone: string | null;
   budget: string | null;
+  preferred_date: string | null;
+  preferred_time: string | null;
   message: string;
   status: string;
   created_at: string;
@@ -77,6 +79,13 @@ const CustomRequestsPage = () => {
                     <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {r.email}</span>
                     {r.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {r.phone}</span>}
                     {r.company && <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {r.company}</span>}
+                    {r.preferred_date && (
+                      <span className="flex items-center gap-1 text-primary">
+                        <CalendarClock className="h-3 w-3" />
+                        {format(new Date(`${r.preferred_date}T00:00:00`), "MMM d, yyyy")}
+                        {r.preferred_time && ` at ${r.preferred_time.slice(0, 5)}`}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -304,6 +304,8 @@ export type Database = {
           message: string
           name: string
           phone: string | null
+          preferred_date: string | null
+          preferred_time: string | null
           status: string
           updated_at: string
         }
@@ -316,6 +318,8 @@ export type Database = {
           message: string
           name: string
           phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
           status?: string
           updated_at?: string
         }
@@ -328,6 +332,8 @@ export type Database = {
           message?: string
           name?: string
           phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
           status?: string
           updated_at?: string
         }
