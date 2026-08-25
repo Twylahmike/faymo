@@ -105,6 +105,11 @@ const Pricing = () => {
                 features={plan.features}
                 popular={plan.popular}
                 cta={plan.cta}
+                onSelect={() => {
+                  window.location.href = `mailto:hello@orion.com?subject=${encodeURIComponent(
+                    `${plan.name} plan inquiry`
+                  )}`;
+                }}
               />
             ))}
           </div>

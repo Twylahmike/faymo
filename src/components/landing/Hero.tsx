@@ -1,7 +1,10 @@
 import { ArrowRight, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-32">
       {/* Background glow */}
@@ -33,6 +36,7 @@ const Hero = () => {
             <Button
               size="lg"
               className="rounded-full bg-primary text-primary-foreground px-8 text-base font-semibold hover:bg-primary/90 animate-pulse-glow"
+              onClick={() => navigate("/pricing")}
             >
               Book a Strategy Call
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -41,6 +45,7 @@ const Hero = () => {
               variant="outline"
               size="lg"
               className="rounded-full border-border/50 px-8 text-base hover:bg-secondary"
+              onClick={() => document.getElementById("divisions")?.scrollIntoView({ behavior: "smooth" })}
             >
               <Play className="mr-2 h-4 w-4" />
               See ORION in Action

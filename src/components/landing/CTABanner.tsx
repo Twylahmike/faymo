@@ -1,9 +1,11 @@
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 const CTABanner = () => {
   const { ref, isVisible } = useScrollAnimation();
+  const navigate = useNavigate();
 
   return (
     <section className="relative py-24 lg:py-32">
@@ -23,6 +25,7 @@ const CTABanner = () => {
             <Button
               size="lg"
               className="rounded-full bg-primary text-primary-foreground px-8 text-base font-semibold hover:bg-primary/90"
+              onClick={() => navigate("/pricing")}
             >
               Book a Strategy Call
               <ArrowRight className="ml-2 h-4 w-4" />

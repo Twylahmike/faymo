@@ -4,16 +4,16 @@ import { Orbit, Twitter, Instagram, Linkedin, Github } from "lucide-react";
 const Footer = () => {
   const footerLinks = {
     Divisions: [
-      { label: "ORION AI", href: "#divisions" },
-      { label: "ORION Automation", href: "#divisions" },
-      { label: "ORION Software", href: "#divisions" },
+      { label: "ORION AI", href: "/#divisions" },
+      { label: "ORION Automation", href: "/#divisions" },
+      { label: "ORION Software", href: "/#divisions" },
       { label: "ORION Enterprise", href: "/pricing" },
     ],
     Company: [
       { label: "About", href: "#" },
       { label: "Blog", href: "#" },
       { label: "Careers", href: "#" },
-      { label: "Contact", href: "#" },
+      { label: "Contact", href: "mailto:hello@orion.com" },
     ],
     Resources: [
       { label: "Documentation", href: "#" },
