@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Sparkles } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import PricingFAQ from "@/components/pricing/PricingFAQ";
@@ -17,9 +17,16 @@ interface Service {
 
 const MOST_POPULAR_MARKER = "(Most Popular)";
 
+// Descriptions longer than this collapse behind a "See more" toggle so a
+// bullet-list-style description doesn't blow out the card's height.
+const DESCRIPTION_PREVIEW_LENGTH = 90;
+
 const ServiceCard = ({ service }: { service: Service }) => {
+  const [expanded, setExpanded] = useState(false);
   const popular = service.name.includes(MOST_POPULAR_MARKER);
   const name = service.name.replace(MOST_POPULAR_MARKER, "").trim();
+  const description = service.description?.trim() || null;
+  const isLong = !!description && description.length > DESCRIPTION_PREVIEW_LENGTH;
 
   return (
     <div
@@ -34,8 +41,26 @@ const ServiceCard = ({ service }: { service: Service }) => {
       )}
       <div className="mb-4">
         <h3 className="font-display text-xl font-bold">{name}</h3>
-        {service.description && (
-          <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{service.description}</p>
+        {description && (
+          <>
+            <p
+              className={`mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${
+                !expanded && isLong ? "line-clamp-2" : ""
+              }`}
+            >
+              {description}
+            </p>
+            {isLong && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-1 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                {expanded ? "See less" : "See more"}
+                <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+              </button>
+            )}
+          </>
         )}
       </div>
       <div className="mt-auto pt-4">
