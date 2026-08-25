@@ -7,12 +7,12 @@ import {
 
 const faqs = [
   {
-    q: "Can I try F🩵ymo for free?",
-    a: "Yes! Our Starter plan is completely free and includes core features for managing up to 10 creators. No credit card required.",
+    q: "What does ORION actually build?",
+    a: "Everything from a single website to full AI agents, business automation, custom software, and managed infrastructure — organized across ORION's 8 divisions: AI, Automation, Software, Digital, Integrations, Data, Infrastructure, and Security.",
   },
   {
-    q: "How does the AI Copilot work?",
-    a: "Our AI Copilot analyzes your creator data, campaign history, and industry trends to provide smart recommendations for creator matching, content strategy, and budget optimization.",
+    q: "How do the AI agents work?",
+    a: "We design and deploy custom AI agents — sales, support, operations, and more — that plug into your existing tools, act autonomously on defined workflows, and are monitored and improved on an ongoing basis.",
   },
   {
     q: "Can I switch plans at any time?",
@@ -20,11 +20,11 @@ const faqs = [
   },
   {
     q: "Is my data secure?",
-    a: "Security is our top priority. We use enterprise-grade encryption, SOC 2 compliance, and regular security audits to keep your data safe.",
+    a: "Security is our top priority. Every engagement includes access control, encryption, and audit logging, backed by ORION Security's ongoing monitoring.",
   },
   {
-    q: "Do you offer custom enterprise solutions?",
-    a: "Yes, our Enterprise plan includes custom integrations, dedicated support, SLA guarantees, and tailored onboarding. Contact our sales team for details.",
+    q: "Do you offer full digital transformation?",
+    a: "Yes — our Enterprise plan takes you through business audit, process mapping, AI strategy, software, automation, integrations, infrastructure, deployment, training, and ongoing managed intelligence. Contact our team for details.",
   },
 ];
 

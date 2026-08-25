@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
-import { Sparkles, Twitter, Instagram, Linkedin, Github } from "lucide-react";
+import { Orbit, Twitter, Instagram, Linkedin, Github } from "lucide-react";
 
 const Footer = () => {
   const footerLinks = {
-    Product: [
-      { label: "Features", href: "#features" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Integrations", href: "#" },
-      { label: "Changelog", href: "#" },
+    Divisions: [
+      { label: "ORION AI", href: "#divisions" },
+      { label: "ORION Automation", href: "#divisions" },
+      { label: "ORION Software", href: "#divisions" },
+      { label: "ORION Enterprise", href: "/pricing" },
     ],
     Company: [
       { label: "About", href: "#" },
@@ -35,13 +35,13 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-6 w-6 text-primary" />
+              <Orbit className="h-6 w-6 text-primary" />
               <span className="font-display text-xl font-bold">
-                F<span className="text-primary">🩵</span>ymo
+                ORI<span className="text-primary">O</span>N
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              The all-in-one platform for managing creators, influencers, and talent at scale.
+              Intelligent digital systems that help businesses operate, automate, sell, and scale.
             </p>
             <div className="mt-6 flex gap-4">
               {[Twitter, Instagram, Linkedin, Github].map((Icon, i) => (
@@ -87,10 +87,10 @@ const Footer = () => {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-border/50 pt-8 md:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} F🩵ymo. All rights reserved.
+            © {new Date().getFullYear()} ORION. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
-            Built for creators, by creators.
+            The digital operating system for modern business.
           </p>
         </div>
       </div>

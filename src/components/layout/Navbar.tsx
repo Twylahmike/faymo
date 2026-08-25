@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Orbit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,7 +10,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const navLinks = [
-    { label: "Features", href: "#features" },
+    { label: "Divisions", href: "#divisions" },
     { label: "How It Works", href: "#how-it-works" },
     { label: "Pricing", href: "/pricing" },
     { label: "FAQ", href: "#faq" },
@@ -20,9 +20,9 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
+          <Orbit className="h-6 w-6 text-primary" />
           <span className="font-display text-xl font-bold tracking-tight">
-            F<span className="text-primary">🩵</span>ymo
+            ORI<span className="text-primary">O</span>N
           </span>
         </Link>
 

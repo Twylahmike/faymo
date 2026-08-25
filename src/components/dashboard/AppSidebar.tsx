@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, UserCheck, CreditCard,
-  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Sparkles, FileText, ScrollText,
+  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Orbit, FileText, ScrollText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -56,10 +56,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarHeader className="p-4">
         <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary shrink-0" />
+          <Orbit className="h-6 w-6 text-primary shrink-0" />
           {!collapsed && (
             <span className="font-display text-lg font-bold tracking-tight">
-              F<span className="text-primary">🩵</span>ymo
+              ORI<span className="text-primary">O</span>N
             </span>
           )}
         </button>
@@ -145,7 +145,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-2">
         <p className={`text-xs text-muted-foreground text-center ${collapsed ? "hidden" : ""}`}>
-          © 2026 Flymo
+          © 2026 ORION
         </p>
       </SidebarFooter>
     </Sidebar>
