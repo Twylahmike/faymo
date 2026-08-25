@@ -11,6 +11,45 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Briefcase, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+type ServiceFormState = { name: string; description: string; price: string; category: string; status: string };
+
+const emptyServiceForm: ServiceFormState = { name: "", description: "", price: "", category: "", status: "active" };
+
+// Defined outside ServicesPage so it keeps a stable identity across renders —
+// nesting this inside the page component would remount the whole form (and
+// drop input focus) on every keystroke, since setForm would re-create it.
+const ServiceFormFields = ({
+  form,
+  setForm,
+  onSubmit,
+  submitLabel,
+}: {
+  form: ServiceFormState;
+  setForm: React.Dispatch<React.SetStateAction<ServiceFormState>>;
+  onSubmit: () => void;
+  submitLabel: string;
+}) => (
+  <div className="space-y-4">
+    <div><Label>Service Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
+    <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div><Label>Price (KES)</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></div>
+      <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Marketing" /></div>
+    </div>
+    <div>
+      <Label>Status</Label>
+      <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="inactive">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+    <Button className="w-full" onClick={onSubmit}>{submitLabel}</Button>
+  </div>
+);
+
 const ServicesPage = () => {
   const { user } = useAuth();
   const [services, setServices] = useState<any[]>([]);
@@ -18,7 +57,9 @@ const ServicesPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", description: "", price: "", category: "", status: "active" });
+  // Separate state for Add vs Edit so opening one never shows stale values from the other.
+  const [addForm, setAddForm] = useState<ServiceFormState>(emptyServiceForm);
+  const [editForm, setEditForm] = useState<ServiceFormState>(emptyServiceForm);
 
   const fetchServices = useCallback(async () => {
     if (!user) return;
@@ -29,14 +70,14 @@ const ServicesPage = () => {
   useEffect(() => { fetchServices(); }, [fetchServices]);
 
   const handleAdd = async () => {
-    if (!user || !form.name) return;
+    if (!user || !addForm.name) return;
     const { error } = await supabase.from("services").insert({
-      name: form.name, description: form.description || null, price: parseFloat(form.price) || 0,
-      category: form.category || null, status: form.status, user_id: user.id,
+      name: addForm.name, description: addForm.description || null, price: parseFloat(addForm.price) || 0,
+      category: addForm.category || null, status: addForm.status, user_id: user.id,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Service added");
-    setForm({ name: "", description: "", price: "", category: "", status: "active" });
+    setAddForm(emptyServiceForm);
     setIsOpen(false);
     fetchServices();
   };
@@ -50,48 +91,26 @@ const ServicesPage = () => {
 
   const openEdit = (s: any) => {
     setEditId(s.id);
-    setForm({ name: s.name, description: s.description || "", price: String(s.price || 0), category: s.category || "", status: s.status || "active" });
+    setEditForm({ name: s.name, description: s.description || "", price: String(s.price || 0), category: s.category || "", status: s.status || "active" });
     setEditOpen(true);
   };
 
   const handleEdit = async () => {
     if (!editId) return;
     const { error } = await supabase.from("services").update({
-      name: form.name, description: form.description || null, price: parseFloat(form.price) || 0,
-      category: form.category || null, status: form.status,
+      name: editForm.name, description: editForm.description || null, price: parseFloat(editForm.price) || 0,
+      category: editForm.category || null, status: editForm.status,
     }).eq("id", editId);
     if (error) { toast.error(error.message); return; }
     toast.success("Service updated");
     setEditOpen(false);
-    setForm({ name: "", description: "", price: "", category: "", status: "active" });
+    setEditForm(emptyServiceForm);
     fetchServices();
   };
 
   const filtered = services.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.category || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const ServiceForm = ({ onSubmit, submitLabel }: { onSubmit: () => void; submitLabel: string }) => (
-    <div className="space-y-4">
-      <div><Label>Service Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
-      <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Price (KES)</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></div>
-        <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Marketing" /></div>
-      </div>
-      <div>
-        <Label>Status</Label>
-        <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <Button className="w-full" onClick={onSubmit}>{submitLabel}</Button>
-    </div>
   );
 
   return (
@@ -101,7 +120,7 @@ const ServicesPage = () => {
           <h1 className="font-display text-2xl font-bold">Services</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your service offerings</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (open) setAddForm(emptyServiceForm); }}>
           <DialogTrigger asChild>
             <Button className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white">
               <Plus className="h-4 w-4 mr-1" /> Add Service
@@ -109,7 +128,7 @@ const ServicesPage = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Add New Service</DialogTitle></DialogHeader>
-            <ServiceForm onSubmit={handleAdd} submitLabel="Add Service" />
+            <ServiceFormFields form={addForm} setForm={setAddForm} onSubmit={handleAdd} submitLabel="Add Service" />
           </DialogContent>
         </Dialog>
       </div>
@@ -118,7 +137,7 @@ const ServicesPage = () => {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit Service</DialogTitle></DialogHeader>
-          <ServiceForm onSubmit={handleEdit} submitLabel="Save Changes" />
+          <ServiceFormFields form={editForm} setForm={setEditForm} onSubmit={handleEdit} submitLabel="Save Changes" />
         </DialogContent>
       </Dialog>
 
