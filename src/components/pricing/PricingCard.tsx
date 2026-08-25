@@ -9,9 +9,10 @@ interface PricingCardProps {
   features: string[];
   popular?: boolean;
   cta: string;
+  onSelect?: () => void;
 }
 
-const PricingCard = ({ name, price, period, description, features, popular, cta }: PricingCardProps) => {
+const PricingCard = ({ name, price, period, description, features, popular, cta, onSelect }: PricingCardProps) => {
   return (
     <div
       className={`relative glass-card flex flex-col rounded-2xl p-8 transition-all duration-300 ${
@@ -44,6 +45,7 @@ const PricingCard = ({ name, price, period, description, features, popular, cta 
       </ul>
 
       <Button
+        onClick={onSelect}
         className={`w-full rounded-full ${
           popular
             ? "bg-primary text-primary-foreground hover:bg-primary/90"

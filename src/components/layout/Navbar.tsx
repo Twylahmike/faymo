@@ -9,11 +9,14 @@ const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Section links are prefixed with "/" so they still work when clicked from
+  // a page other than the homepage (e.g. /pricing) — a bare "#divisions"
+  // href only scrolls if that section already exists on the current page.
   const navLinks = [
-    { label: "Divisions", href: "#divisions" },
-    { label: "How It Works", href: "#how-it-works" },
+    { label: "Divisions", href: "/#divisions" },
+    { label: "How It Works", href: "/#how-it-works" },
     { label: "Pricing", href: "/pricing" },
-    { label: "FAQ", href: "#faq" },
+    { label: "FAQ", href: "/#faq" },
   ];
 
   return (
