@@ -52,6 +52,7 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [invoicedProjectIds, setInvoicedProjectIds] = useState<Set<string>>(new Set());
   const [teamProfiles, setTeamProfiles] = useState<Record<string, string>>({});
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; display_name: string }[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -66,15 +67,17 @@ const ProjectsPage = () => {
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const [projRes, clientRes, taskRes, profileRes] = await Promise.all([
+    const [projRes, clientRes, taskRes, profileRes, invoiceRes] = await Promise.all([
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("clients").select("id, name"),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("user_id, display_name"),
+      supabase.from("invoices").select("project_id"),
     ]);
     setProjects(projRes.data || []);
     setClients(clientRes.data || []);
     setTasks(taskRes.data || []);
+    setInvoicedProjectIds(new Set((invoiceRes.data || []).map(i => i.project_id).filter(Boolean)));
     if (profileRes.data) {
       const map: Record<string, string> = {};
       profileRes.data.forEach(p => { map[p.user_id] = p.display_name || "User"; });
@@ -102,6 +105,12 @@ const ProjectsPage = () => {
     });
     return map;
   }, [projects, tasks]);
+
+  // Once an invoice has been generated for a project, only an admin can edit it.
+  const canEditProject = useCallback(
+    (project: any) => isAdmin || !invoicedProjectIds.has(project.id),
+    [isAdmin, invoicedProjectIds]
+  );
 
   const handleAddProject = async () => {
     if (!user || !form.name) return;
@@ -283,9 +292,13 @@ const ProjectsPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={(e) => openEditDialog(selectedProjectData, e)}>
-              <Pencil className="h-4 w-4 mr-1" /> Edit
-            </Button>
+            {canEditProject(selectedProjectData) ? (
+              <Button variant="outline" size="sm" onClick={(e) => openEditDialog(selectedProjectData, e)}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground px-2">Invoiced — admin only</span>
+            )}
             {isAdmin && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -611,9 +624,11 @@ const ProjectsPage = () => {
                   <h3 className="font-display font-bold">{project.name}</h3>
                   <div className="flex items-center gap-1">
                     <span className={`text-xs rounded-full px-2 py-0.5 ${priorityColors[project.priority]}`}>{project.priority}</span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => openEditDialog(project, e)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    {canEditProject(project) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => openEditDialog(project, e)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {isAdmin && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
