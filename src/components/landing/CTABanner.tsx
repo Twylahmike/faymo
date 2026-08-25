@@ -1,11 +1,10 @@
 import { ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
+import CustomRequestDialog from "@/components/pricing/CustomRequestDialog";
 
 const CTABanner = () => {
   const { ref, isVisible } = useScrollAnimation();
-  const navigate = useNavigate();
 
   return (
     <section className="relative py-24 lg:py-32">
@@ -22,14 +21,15 @@ const CTABanner = () => {
             Join the businesses already running on ORION's AI, automation, and software systems.
           </p>
           <div className="relative mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button
-              size="lg"
-              className="rounded-full bg-primary text-primary-foreground px-8 text-base font-semibold hover:bg-primary/90"
-              onClick={() => navigate("/pricing")}
-            >
-              Book a Strategy Call
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <CustomRequestDialog presetMessage={"I'd like to book a strategy call.\n\n"}>
+              <Button
+                size="lg"
+                className="rounded-full bg-primary text-primary-foreground px-8 text-base font-semibold hover:bg-primary/90"
+              >
+                Book a Strategy Call
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CustomRequestDialog>
           </div>
         </div>
       </div>
