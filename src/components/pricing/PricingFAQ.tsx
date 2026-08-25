@@ -15,8 +15,8 @@ const faqs = [
     a: "We design and deploy custom AI agents — sales, support, operations, and more — that plug into your existing tools, act autonomously on defined workflows, and are monitored and improved on an ongoing basis.",
   },
   {
-    q: "Can I switch plans at any time?",
-    a: "Absolutely. You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing differences.",
+    q: "What if none of the listed products fit what I need?",
+    a: "Use the 'Request a Custom Quote' card on the pricing page. Tell us what you're trying to build and we'll scope something bespoke — often combining multiple divisions into one engagement.",
   },
   {
     q: "Is my data secure?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "Do you offer full digital transformation?",
-    a: "Yes — our Enterprise plan takes you through business audit, process mapping, AI strategy, software, automation, integrations, infrastructure, deployment, training, and ongoing managed intelligence. Contact our team for details.",
+    a: "Yes — a full transformation engagement takes you through business audit, process mapping, AI strategy, software, automation, integrations, infrastructure, deployment, training, and ongoing managed intelligence. Request a custom quote for details.",
   },
 ];
 
