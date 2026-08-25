@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, UserCheck, CreditCard,
-  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Orbit, FileText, ScrollText,
+  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Orbit, FileText, ScrollText, Inbox,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -31,6 +31,7 @@ const mainNav = [
 ];
 
 const adminNav = [
+  { title: "Custom Requests", url: "/dashboard/custom-requests", icon: Inbox, color: "text-primary" },
   { title: "Team", url: "/dashboard/team", icon: ShieldCheck, color: "text-red-400" },
   { title: "Audit Log", url: "/dashboard/audit-log", icon: ScrollText, color: "text-cyan-400" },
   { title: "Settings", url: "/dashboard/settings", icon: Settings, color: "text-muted-foreground" },

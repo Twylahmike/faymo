@@ -22,6 +22,7 @@ import TeamPage from "./pages/dashboard/TeamPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import MyWorkPage from "./pages/dashboard/MyWorkPage";
 import AuditLogPage from "./pages/dashboard/AuditLogPage";
+import CustomRequestsPage from "./pages/dashboard/CustomRequestsPage";
 import ClientPortal from "./pages/ClientPortal";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="team" element={<TeamPage />} />
                 <Route path="my-work" element={<MyWorkPage />} />
                 <Route path="audit-log" element={<AuditLogPage />} />
+                <Route path="custom-requests" element={<CustomRequestsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/client-portal" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
