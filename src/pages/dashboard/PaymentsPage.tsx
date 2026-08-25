@@ -26,6 +26,30 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-muted text-muted-foreground",
 };
 
+// Defined outside PaymentsPage so they keep a stable identity across renders —
+// nesting these inside the page component would remount them (and could
+// unexpectedly close an open dropdown) on every keystroke elsewhere in the form.
+const CurrencySelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger><SelectValue /></SelectTrigger>
+    <SelectContent>
+      {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+    </SelectContent>
+  </Select>
+);
+
+const RecurringSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger><SelectValue /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">One-time</SelectItem>
+      <SelectItem value="weekly">Weekly</SelectItem>
+      <SelectItem value="monthly">Monthly</SelectItem>
+      <SelectItem value="quarterly">Quarterly</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
 const PaymentsPage = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -191,27 +215,6 @@ const PaymentsPage = () => {
     return clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       i.invoice_number.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  const CurrencySelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-      </SelectContent>
-    </Select>
-  );
-
-  const RecurringSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="none">One-time</SelectItem>
-        <SelectItem value="weekly">Weekly</SelectItem>
-        <SelectItem value="monthly">Monthly</SelectItem>
-        <SelectItem value="quarterly">Quarterly</SelectItem>
-      </SelectContent>
-    </Select>
-  );
 
   return (
     <div className="space-y-6">
