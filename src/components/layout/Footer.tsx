@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Orbit, Twitter, Instagram, Linkedin, Github } from "lucide-react";
+import { Twitter, Instagram, Linkedin, Github } from "lucide-react";
+import OrionLogo from "@/components/OrionLogo";
 
 const Footer = () => {
   const footerLinks = {
@@ -35,7 +36,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <Orbit className="h-6 w-6 text-primary" />
+              <OrionLogo className="h-8 w-8 text-primary" />
               <span className="font-display text-xl font-bold">
                 ORI<span className="text-primary">O</span>N
               </span>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Orbit } from "lucide-react";
+import OrionLogo from "@/components/OrionLogo";
 import { toast } from "sonner";
 
 const ResetPassword = () => {
@@ -38,7 +38,7 @@ const ResetPassword = () => {
       <div className="absolute top-0 left-0 right-0 hero-glow h-96 pointer-events-none" />
       <div className="relative w-full max-w-sm">
         <div className="flex items-center gap-2 mb-2">
-          <Orbit className="h-6 w-6 text-primary" />
+          <OrionLogo className="h-7 w-7 text-primary" />
           <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Set new password</h1>
