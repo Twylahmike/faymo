@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Twitter, Instagram, Linkedin, Github } from "lucide-react";
 import OrionLogo from "@/components/OrionLogo";
 
 const Footer = () => {
@@ -11,21 +10,13 @@ const Footer = () => {
       { label: "ORION Enterprise", href: "/pricing" },
     ],
     Company: [
-      { label: "About", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
+      { label: "About", href: "/about" },
+      { label: "Pricing", href: "/pricing" },
       { label: "Contact", href: "mailto:hello@orion.com" },
     ],
-    Resources: [
-      { label: "Documentation", href: "#" },
-      { label: "Help Center", href: "#" },
-      { label: "Community", href: "#" },
-      { label: "API", href: "#" },
-    ],
     Legal: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Security", href: "#" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
     ],
   };
 
@@ -44,17 +35,6 @@ const Footer = () => {
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               Intelligent digital systems that help businesses operate, automate, sell, and scale.
             </p>
-            <div className="mt-6 flex gap-4">
-              {[Twitter, Instagram, Linkedin, Github].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* Link columns */}

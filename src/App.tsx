@@ -8,6 +8,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import DashboardHome from "./pages/dashboard/DashboardHome";
@@ -41,6 +44,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
               {/* Public sign-up is disabled — access is invite-only. Team credentials are issued from the dashboard's Team page. */}
               <Route path="/signup" element={<Navigate to="/login" replace />} />
