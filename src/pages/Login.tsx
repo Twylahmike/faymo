@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Orbit, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import OrionLogo from "@/components/OrionLogo";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -60,7 +61,7 @@ const Login = () => {
         </Link>
 
         <div className="flex items-center gap-2 mb-2">
-          <Orbit className="h-6 w-6 text-primary" />
+          <OrionLogo className="h-7 w-7 text-primary" />
           <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Welcome back</h1>

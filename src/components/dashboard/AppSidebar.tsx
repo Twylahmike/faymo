@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, UserCheck, CreditCard,
-  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, Orbit, FileText, ScrollText, Inbox,
+  Megaphone, BarChart3, Settings, CalendarDays, ShieldCheck, FileText, ScrollText, Inbox,
 } from "lucide-react";
+import OrionLogo from "@/components/OrionLogo";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
@@ -57,7 +58,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarHeader className="p-4">
         <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2">
-          <Orbit className="h-6 w-6 text-primary shrink-0" />
+          <OrionLogo className="h-7 w-7 text-primary shrink-0" />
           {!collapsed && (
             <span className="font-display text-lg font-bold tracking-tight">
               ORI<span className="text-primary">O</span>N

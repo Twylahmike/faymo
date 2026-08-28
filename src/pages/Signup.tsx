@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Orbit, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import OrionLogo from "@/components/OrionLogo";
 
 // Public self-registration is disabled — ORION is invite-only. Team member
 // credentials are created from the dashboard's Team page. This page is kept
@@ -15,7 +16,7 @@ const Signup = () => {
         </Link>
 
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Orbit className="h-6 w-6 text-primary" />
+          <OrionLogo className="h-7 w-7 text-primary" />
           <span className="font-display text-xl font-bold">ORI<span className="text-primary">O</span>N</span>
         </div>
         <h1 className="font-display text-2xl font-bold mb-1">Sign-ups are closed</h1>
