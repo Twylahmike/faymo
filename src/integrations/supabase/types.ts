@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -89,41 +89,59 @@ export type Database = {
         Row: {
           agency_user_id: string
           auto_generated_password: string | null
+          brand_color: string | null
           company: string | null
           created_at: string
           email: string | null
           id: string
+          instagram_handle: string | null
+          logo_url: string | null
           name: string
           notes: string | null
           phone: string | null
+          portal_slug: string | null
+          status: string
           updated_at: string
           user_id: string | null
+          website: string | null
         }
         Insert: {
           agency_user_id: string
           auto_generated_password?: string | null
+          brand_color?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          instagram_handle?: string | null
+          logo_url?: string | null
           name: string
           notes?: string | null
           phone?: string | null
+          portal_slug?: string | null
+          status?: string
           updated_at?: string
           user_id?: string | null
+          website?: string | null
         }
         Update: {
           agency_user_id?: string
           auto_generated_password?: string | null
+          brand_color?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          instagram_handle?: string | null
+          logo_url?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
+          portal_slug?: string | null
+          status?: string
           updated_at?: string
           user_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -339,9 +357,141 @@ export type Database = {
         }
         Relationships: []
       }
+      document_signatures: {
+        Row: {
+          document_id: string
+          id: string
+          ip_address: string | null
+          signature_image_url: string | null
+          signed_at: string
+          signer_email: string | null
+          signer_name: string
+          typed_signature: string | null
+        }
+        Insert: {
+          document_id: string
+          id?: string
+          ip_address?: string | null
+          signature_image_url?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name: string
+          typed_signature?: string | null
+        }
+        Update: {
+          document_id?: string
+          id?: string
+          ip_address?: string | null
+          signature_image_url?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name?: string
+          typed_signature?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_signatures_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_templates: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          client_fillable: boolean
+          client_id: string
+          content: Json
+          created_at: string
+          created_by: string | null
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          file_name: string | null
+          file_url: string | null
+          id: string
+          status: Database["public"]["Enums"]["doc_status"]
+          submitted_at: string | null
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          client_fillable?: boolean
+          client_id: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["doc_status"]
+          submitted_at?: string | null
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          client_fillable?: boolean
+          client_id?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["doc_status"]
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
+          advance_payment_due: number | null
           amount: number
+          bank_details: Json | null
           client_id: string
           created_at: string
           created_by: string
@@ -349,16 +499,23 @@ export type Database = {
           due_date: string | null
           id: string
           invoice_number: string
+          issued_date: string | null
+          line_items: Json
           notes: string | null
           paid_at: string | null
           payment_method: string | null
           project_id: string | null
           recurring_interval: string | null
+          remaining_balance: number | null
           status: string | null
+          subtotal: number | null
+          terms_text: string | null
           updated_at: string
         }
         Insert: {
+          advance_payment_due?: number | null
           amount?: number
+          bank_details?: Json | null
           client_id: string
           created_at?: string
           created_by: string
@@ -366,16 +523,23 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number: string
+          issued_date?: string | null
+          line_items?: Json
           notes?: string | null
           paid_at?: string | null
           payment_method?: string | null
           project_id?: string | null
           recurring_interval?: string | null
+          remaining_balance?: number | null
           status?: string | null
+          subtotal?: number | null
+          terms_text?: string | null
           updated_at?: string
         }
         Update: {
+          advance_payment_due?: number | null
           amount?: number
+          bank_details?: Json | null
           client_id?: string
           created_at?: string
           created_by?: string
@@ -383,12 +547,17 @@ export type Database = {
           due_date?: string | null
           id?: string
           invoice_number?: string
+          issued_date?: string | null
+          line_items?: Json
           notes?: string | null
           paid_at?: string | null
           payment_method?: string | null
           project_id?: string | null
           recurring_interval?: string | null
+          remaining_balance?: number | null
           status?: string | null
+          subtotal?: number | null
+          terms_text?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -897,9 +1066,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_agency_staff: { Args: never; Returns: boolean }
+      is_client_owner: { Args: { _client_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "worker" | "client"
+      doc_status:
+        | "draft"
+        | "sent"
+        | "awaiting_signature"
+        | "signed"
+        | "paid"
+        | "completed"
+      doc_type:
+        | "inquiry_form"
+        | "agreement"
+        | "invoice"
+        | "welcome_document"
+        | "welcome_email"
+        | "questionnaire"
+        | "client_portal_summary"
+        | "proposal"
+        | "strategy_kpi"
+        | "content_calendar"
+        | "content_creation_notes"
+        | "monthly_analytics"
+        | "feedback_form"
+        | "file_attachment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -915,12 +1108,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -944,11 +1137,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -969,11 +1162,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -994,11 +1187,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1011,11 +1204,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1028,6 +1221,30 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "worker", "client"],
+      doc_status: [
+        "draft",
+        "sent",
+        "awaiting_signature",
+        "signed",
+        "paid",
+        "completed",
+      ],
+      doc_type: [
+        "inquiry_form",
+        "agreement",
+        "invoice",
+        "welcome_document",
+        "welcome_email",
+        "questionnaire",
+        "client_portal_summary",
+        "proposal",
+        "strategy_kpi",
+        "content_calendar",
+        "content_creation_notes",
+        "monthly_analytics",
+        "feedback_form",
+        "file_attachment",
+      ],
     },
   },
 } as const
