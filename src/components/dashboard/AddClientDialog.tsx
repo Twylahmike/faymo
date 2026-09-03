@@ -7,28 +7,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, Copy, Check } from "lucide-react";
+import { UserPlus, Copy, Check, Upload, FileText, Loader2 } from "lucide-react";
 
 interface AddClientDialogProps {
   onClientAdded: () => void;
   children?: React.ReactNode;
 }
 
+const emptyForm = {
+  name: "",
+  email: "",
+  company: "",
+  phone: "",
+  notes: "",
+  instagram_handle: "",
+  website: "",
+  status: "lead",
+};
+
 const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [createdClientId, setCreatedClientId] = useState<string | null>(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState<string[]>([]);
+  const [documentUploading, setDocumentUploading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    company: "",
-    phone: "",
-    notes: "",
-    instagram_handle: "",
-    website: "",
-    status: "lead",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +43,8 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     }
 
     setLoading(true);
+    const slug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+      + "-" + Math.random().toString(36).slice(2, 6);
 
     const response = await supabase.functions.invoke("create-client-account", {
       body: {
@@ -46,6 +53,10 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
         company: form.company.trim() || null,
         phone: form.phone.trim() || null,
         notes: form.notes.trim() || null,
+        instagram_handle: form.instagram_handle.trim() || null,
+        website: form.website.trim() || null,
+        status: form.status,
+        portal_slug: slug,
       },
     });
 
@@ -55,24 +66,81 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       return;
     }
 
-    const newClientId = response.data?.client?.id;
-    if (newClientId) {
-      const slug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-        + "-" + Math.random().toString(36).slice(2, 6);
-      await supabase.from("clients").update({
-        instagram_handle: form.instagram_handle.trim() || null,
-        website: form.website.trim() || null,
-        status: form.status,
-        portal_slug: slug,
-      }).eq("id", newClientId);
+    const newClientId = response.data?.client?.id as string | undefined;
+    if (!newClientId) {
+      setLoading(false);
+      toast.error("Client account was created without a client record");
+      return;
     }
 
+    // Keep this update for deployments where the account function has not yet
+    // picked up the optional profile fields.
+    const { error: detailsError } = await supabase.from("clients").update({
+      instagram_handle: form.instagram_handle.trim() || null,
+      website: form.website.trim() || null,
+      status: form.status,
+      portal_slug: slug,
+    }).eq("id", newClientId);
+
     setLoading(false);
+    if (detailsError) {
+      toast.error(`Account created, but client details could not be saved: ${detailsError.message}`);
+      return;
+    }
+
+    setCreatedClientId(newClientId);
     setCredentials(response.data.credentials);
     toast.success(`Client account created for ${form.name}!`);
     onClientAdded();
   };
 
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files ?? []);
+    if (!createdClientId || selectedFiles.length === 0) return;
+
+    setDocumentUploading(true);
+    let uploadedCount = 0;
+    const { data: { user } } = await supabase.auth.getUser();
+
+    for (const file of selectedFiles) {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 20MB)`);
+        continue;
+      }
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const path = `clients/${createdClientId}/documents/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage.from("media").upload(path, file);
+      if (uploadError) {
+        toast.error(`Could not upload ${file.name}: ${uploadError.message}`);
+        continue;
+      }
+
+      const { data: publicUrl } = supabase.storage.from("media").getPublicUrl(path);
+      const { error: documentError } = await supabase.from("documents").insert({
+        client_id: createdClientId,
+        doc_type: "file_attachment" as any,
+        title: file.name,
+        content: { description: "" } as any,
+        status: "sent",
+        file_url: publicUrl.publicUrl,
+        file_name: file.name,
+        created_by: user?.id ?? null,
+      } as any);
+
+      if (documentError) {
+        toast.error(`File uploaded but could not be added to the portal: ${documentError.message}`);
+        continue;
+      }
+
+      uploadedCount += 1;
+      setUploadedDocuments((current) => [...current, file.name]);
+    }
+
+    setDocumentUploading(false);
+    e.target.value = "";
+    if (uploadedCount > 0) toast.success(`${uploadedCount} document${uploadedCount === 1 ? "" : "s"} added to the client portal`);
+  };
 
   const copyCredentials = () => {
     if (!credentials) return;
@@ -86,8 +154,11 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     setOpen(isOpen);
     if (!isOpen) {
       setCredentials(null);
+      setCreatedClientId(null);
+      setUploadedDocuments([]);
+      setDocumentUploading(false);
       setCopied(false);
-      setForm({ name: "", email: "", company: "", phone: "", notes: "", instagram_handle: "", website: "", status: "lead" });
+      setForm(emptyForm);
     }
   };
 
@@ -115,17 +186,39 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
             <div className="rounded-lg bg-secondary p-4 space-y-2">
               <div>
                 <span className="text-xs text-muted-foreground">Email</span>
-                <p className="text-sm font-mono text-foreground">{credentials.email}</p>
+                <p className="text-sm font-mono text-foreground break-all">{credentials.email}</p>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Password</span>
-                <p className="text-sm font-mono text-foreground">{credentials.password}</p>
+                <p className="text-sm font-mono text-foreground break-all">{credentials.password}</p>
               </div>
             </div>
             <Button onClick={copyCredentials} variant="outline" className="w-full">
               {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
               {copied ? "Copied!" : "Copy Credentials"}
             </Button>
+            <div className="rounded-lg border border-border p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium">Add client documents</p>
+                <p className="text-xs text-muted-foreground">Upload contracts, invoices, and files for this client’s portal.</p>
+              </div>
+              <Button variant="outline" asChild disabled={documentUploading} className="w-full">
+                <label className="cursor-pointer">
+                  {documentUploading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
+                  {documentUploading ? "Uploading..." : "Upload documents"}
+                  <input type="file" multiple className="hidden" onChange={handleDocumentUpload} />
+                </label>
+              </Button>
+              {uploadedDocuments.length > 0 && (
+                <div className="space-y-1">
+                  {uploadedDocuments.map((fileName) => (
+                    <p key={fileName} className="flex items-center gap-2 text-xs text-muted-foreground truncate">
+                      <FileText className="h-3.5 w-3.5 shrink-0 text-primary" /> {fileName}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
             <Button onClick={() => handleClose(false)} className="w-full rounded-full bg-primary text-primary-foreground">
               Done
             </Button>
