@@ -86,7 +86,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     if (!isOpen) {
       setCredentials(null);
       setCopied(false);
-      setForm({ name: "", email: "", company: "", phone: "", notes: "" });
+      setForm({ name: "", email: "", company: "", phone: "", notes: "", instagram_handle: "", website: "", status: "lead" });
     }
   };
 
