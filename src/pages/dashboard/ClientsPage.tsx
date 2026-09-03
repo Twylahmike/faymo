@@ -14,6 +14,7 @@ import AddClientDialog from "@/components/dashboard/AddClientDialog";
 import ContentPlanDialog from "@/components/dashboard/ContentPlanDialog";
 import AddPostDialog from "@/components/dashboard/AddPostDialog";
 import FileUpload from "@/components/dashboard/FileUpload";
+import ClientDocuments from "@/components/documents/ClientDocuments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
@@ -225,6 +226,7 @@ const ClientsPage = () => {
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
           </TabsList>
 
@@ -361,6 +363,10 @@ const ClientsPage = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-4">
+            <ClientDocuments clientId={selectedClient} clientName={selectedClientData.name} />
           </TabsContent>
 
           <TabsContent value="files" className="mt-4 space-y-4">
