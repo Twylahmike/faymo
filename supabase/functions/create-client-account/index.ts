@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { name, email, company, phone, notes } = await req.json();
+    const { name, email, company, phone, notes, instagram_handle, website, status, portal_slug } = await req.json();
     if (!name || !email) {
       return new Response(JSON.stringify({ error: "Name and email are required" }), {
         status: 400,
@@ -97,6 +97,10 @@ Deno.serve(async (req) => {
         company: company || null,
         phone: phone || null,
         notes: notes || null,
+        instagram_handle: instagram_handle || null,
+        website: website || null,
+        status: status || "lead",
+        portal_slug: portal_slug || null,
         auto_generated_password: password,
       })
       .select()

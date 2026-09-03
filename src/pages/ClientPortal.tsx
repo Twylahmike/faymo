@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
 import OrionLogo from "@/components/OrionLogo";
+import PortalDocuments from "@/components/documents/PortalDocuments";
 
 const ClientPortal = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -286,8 +287,9 @@ const ClientPortal = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="content" className="space-y-6">
-          <TabsList className="bg-secondary/50">
+          <TabsList className="bg-secondary/50 flex-wrap h-auto">
             <TabsTrigger value="content" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Content</TabsTrigger>
+            <TabsTrigger value="documents" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Documents</TabsTrigger>
             <TabsTrigger value="invoices" className="gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Invoices</TabsTrigger>
             <TabsTrigger value="messages" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Messages</TabsTrigger>
             <TabsTrigger value="files" className="gap-1.5"><FolderOpen className="h-3.5 w-3.5" /> Files</TabsTrigger>
@@ -470,6 +472,20 @@ const ClientPortal = () => {
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <div className="space-y-6">
+              <h2 className="font-display text-xl font-bold">Your Documents</h2>
+              {clientRecord && (
+                <PortalDocuments
+                  clientId={clientRecord.id}
+                  clientName={clientRecord.name}
+                  clientEmail={clientRecord.email}
+                />
               )}
             </div>
           </TabsContent>

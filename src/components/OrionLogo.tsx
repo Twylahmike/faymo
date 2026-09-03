@@ -1,9 +1,9 @@
-import logoAsset from "@/assets/orion-logo.jpg.asset.json";
+import logoUrl from "@/assets/orion-logo.jpg";
 
-// Brand mark for ORION. Uses the official logo artwork served from the CDN.
+// Brand mark for ORION, bundled so it renders in both preview and production.
 const OrionLogo = ({ className }: { className?: string }) => (
   <img
-    src={logoAsset.url}
+    src={logoUrl}
     alt="Orion logo"
     loading="lazy"
     className={`object-contain ${className ?? ""}`}
