@@ -158,6 +158,31 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
                   maxLength={20} className="bg-secondary border-border" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="client-instagram">Instagram</Label>
+                <Input id="client-instagram" placeholder="@handle" value={form.instagram_handle}
+                  onChange={(e) => setForm({ ...form, instagram_handle: e.target.value })}
+                  maxLength={100} className="bg-secondary border-border" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="client-website">Website</Label>
+                <Input id="client-website" type="url" placeholder="https://..." value={form.website}
+                  onChange={(e) => setForm({ ...form, website: e.target.value })}
+                  maxLength={255} className="bg-secondary border-border" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(status) => setForm({ ...form, status })}>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="client-notes">Notes</Label>
               <Textarea id="client-notes" placeholder="Any notes..." value={form.notes}
