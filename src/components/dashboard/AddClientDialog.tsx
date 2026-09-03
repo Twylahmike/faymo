@@ -24,6 +24,9 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     company: "",
     phone: "",
     notes: "",
+    instagram_handle: "",
+    website: "",
+    status: "lead",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,8 +37,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     }
 
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    
+
     const response = await supabase.functions.invoke("create-client-account", {
       body: {
         name: form.name.trim(),
@@ -46,17 +48,30 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       },
     });
 
-    setLoading(false);
-
     if (response.error || response.data?.error) {
+      setLoading(false);
       toast.error(response.data?.error || "Failed to create client account");
       return;
     }
 
+    const newClientId = response.data?.client?.id;
+    if (newClientId) {
+      const slug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+        + "-" + Math.random().toString(36).slice(2, 6);
+      await supabase.from("clients").update({
+        instagram_handle: form.instagram_handle.trim() || null,
+        website: form.website.trim() || null,
+        status: form.status,
+        portal_slug: slug,
+      }).eq("id", newClientId);
+    }
+
+    setLoading(false);
     setCredentials(response.data.credentials);
     toast.success(`Client account created for ${form.name}!`);
     onClientAdded();
   };
+
 
   const copyCredentials = () => {
     if (!credentials) return;
