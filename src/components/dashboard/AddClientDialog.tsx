@@ -164,6 +164,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       setCredentials(null);
       setCreatedClientId(null);
       setUploadedDocuments([]);
+      setUploadErrors([]);
       setDocumentUploading(false);
       setCopied(false);
       setForm(emptyForm);
@@ -224,6 +225,17 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
                       <FileText className="h-3.5 w-3.5 shrink-0 text-primary" /> {fileName}
                     </p>
                   ))}
+                </div>
+              )}
+              {uploadErrors.length > 0 && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-1">
+                  <p className="flex items-center gap-2 text-xs font-medium text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Some files could not be added
+                  </p>
+                  {uploadErrors.map((message) => (
+                    <p key={message} className="text-xs text-destructive/90 break-words">{message}</p>
+                  ))}
+                  <p className="text-xs text-muted-foreground">Fix the issue above and upload those files again.</p>
                 </div>
               )}
             </div>
