@@ -117,6 +117,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       const path = `clients/${createdClientId}/documents/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage.from("media").upload(path, file);
       if (uploadError) {
+        failures.push(`${file.name} — upload failed: ${uploadError.message}`);
         toast.error(`Could not upload ${file.name}: ${uploadError.message}`);
         continue;
       }
