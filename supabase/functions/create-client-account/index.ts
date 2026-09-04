@@ -121,6 +121,35 @@ Deno.serve(async (req) => {
       performed_by: caller.id,
     });
 
+    // Audit log entry with full client metadata
+    const { data: actorProfile } = await adminClient
+      .from("profiles")
+      .select("display_name")
+      .eq("user_id", caller.id)
+      .maybeSingle();
+
+    await adminClient.from("audit_log").insert({
+      actor_id: caller.id,
+      actor_name: actorProfile?.display_name ?? caller.email ?? null,
+      target_id: client.id,
+      target_name: name,
+      action: "client_account_created",
+      entity_type: "client",
+      details: {
+        client_id: client.id,
+        auth_user_id: newUser.user.id,
+        name,
+        email,
+        company: company || null,
+        phone: phone || null,
+        instagram_handle: instagram_handle || null,
+        website: website || null,
+        status: status || "lead",
+        portal_slug: portal_slug || null,
+        created_at: new Date().toISOString(),
+      },
+    });
+
     return new Response(
       JSON.stringify({ client, credentials: { email, password } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

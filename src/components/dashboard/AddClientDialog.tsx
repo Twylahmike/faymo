@@ -31,6 +31,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [createdClientId, setCreatedClientId] = useState<string | null>(null);
   const [uploadedDocuments, setUploadedDocuments] = useState<string[]>([]);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState(emptyForm);
