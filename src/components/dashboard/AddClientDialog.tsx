@@ -100,14 +100,18 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     if (!createdClientId || selectedFiles.length === 0) return;
 
     setDocumentUploading(true);
+    setUploadErrors([]);
     let uploadedCount = 0;
+    const failures: string[] = [];
     const { data: { user } } = await supabase.auth.getUser();
 
     for (const file of selectedFiles) {
       if (file.size > 20 * 1024 * 1024) {
+        failures.push(`${file.name} — file is larger than the 20MB limit`);
         toast.error(`${file.name} is too large (max 20MB)`);
         continue;
       }
+
 
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const path = `clients/${createdClientId}/documents/${Date.now()}-${safeName}`;
