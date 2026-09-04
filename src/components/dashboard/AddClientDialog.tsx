@@ -135,6 +135,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       } as any);
 
       if (documentError) {
+        failures.push(`${file.name} — saved to storage but not added to the portal: ${documentError.message}`);
         toast.error(`File uploaded but could not be added to the portal: ${documentError.message}`);
         continue;
       }
@@ -144,6 +145,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     }
 
     setDocumentUploading(false);
+    setUploadErrors(failures);
     e.target.value = "";
     if (uploadedCount > 0) toast.success(`${uploadedCount} document${uploadedCount === 1 ? "" : "s"} added to the client portal`);
   };
