@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, Copy, Check, Upload, FileText, Loader2 } from "lucide-react";
+import { UserPlus, Copy, Check, Upload, FileText, Loader2, AlertCircle } from "lucide-react";
 
 interface AddClientDialogProps {
   onClientAdded: () => void;
@@ -31,6 +31,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [createdClientId, setCreatedClientId] = useState<string | null>(null);
   const [uploadedDocuments, setUploadedDocuments] = useState<string[]>([]);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -99,19 +100,24 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     if (!createdClientId || selectedFiles.length === 0) return;
 
     setDocumentUploading(true);
+    setUploadErrors([]);
     let uploadedCount = 0;
+    const failures: string[] = [];
     const { data: { user } } = await supabase.auth.getUser();
 
     for (const file of selectedFiles) {
       if (file.size > 20 * 1024 * 1024) {
+        failures.push(`${file.name} — file is larger than the 20MB limit`);
         toast.error(`${file.name} is too large (max 20MB)`);
         continue;
       }
+
 
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const path = `clients/${createdClientId}/documents/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage.from("media").upload(path, file);
       if (uploadError) {
+        failures.push(`${file.name} — upload failed: ${uploadError.message}`);
         toast.error(`Could not upload ${file.name}: ${uploadError.message}`);
         continue;
       }
@@ -129,6 +135,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       } as any);
 
       if (documentError) {
+        failures.push(`${file.name} — saved to storage but not added to the portal: ${documentError.message}`);
         toast.error(`File uploaded but could not be added to the portal: ${documentError.message}`);
         continue;
       }
@@ -138,6 +145,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
     }
 
     setDocumentUploading(false);
+    setUploadErrors(failures);
     e.target.value = "";
     if (uploadedCount > 0) toast.success(`${uploadedCount} document${uploadedCount === 1 ? "" : "s"} added to the client portal`);
   };
@@ -156,6 +164,7 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
       setCredentials(null);
       setCreatedClientId(null);
       setUploadedDocuments([]);
+      setUploadErrors([]);
       setDocumentUploading(false);
       setCopied(false);
       setForm(emptyForm);
@@ -216,6 +225,17 @@ const AddClientDialog = ({ onClientAdded, children }: AddClientDialogProps) => {
                       <FileText className="h-3.5 w-3.5 shrink-0 text-primary" /> {fileName}
                     </p>
                   ))}
+                </div>
+              )}
+              {uploadErrors.length > 0 && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-1">
+                  <p className="flex items-center gap-2 text-xs font-medium text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Some files could not be added
+                  </p>
+                  {uploadErrors.map((message) => (
+                    <p key={message} className="text-xs text-destructive/90 break-words">{message}</p>
+                  ))}
+                  <p className="text-xs text-muted-foreground">Fix the issue above and upload those files again.</p>
                 </div>
               )}
             </div>
