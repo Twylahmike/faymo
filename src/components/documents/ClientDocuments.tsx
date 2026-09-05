@@ -12,7 +12,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Trash2, Upload, Download, PenLine, Save, BookmarkPlus } from "lucide-react";
+import { FileText, Plus, Trash2, Upload, Download, PenLine, Save, BookmarkPlus, FileArchive } from "lucide-react";
+import BulkDocumentUpload from "./BulkDocumentUpload";
 import DocumentFields from "./DocumentFields";
 import { DOC_TYPES, DOC_STATUSES, getDocType, defaultContent } from "@/lib/documentTypes";
 import { format } from "date-fns";
@@ -63,6 +64,10 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
   const [draft, setDraft] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [newMode, setNewMode] = useState<"write" | "upload">("write");
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const fetchDocs = useCallback(async () => {
     const { data } = await supabase
@@ -92,22 +97,47 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
   const handleCreate = async () => {
     const def = getDocType(newType);
     if (!def) return;
+    if (newMode === "upload" && !newFile) return toast.error("Choose a file to send, or switch to writing the contents");
+    setCreating(true);
     const tpl = templates.find((t) => t.id === newTemplate);
     const { data: { user } } = await supabase.auth.getUser();
+
+    let fileUrl: string | null = null;
+    let fileName: string | null = null;
+    if (newMode === "upload" && newFile) {
+      if (newFile.size > 20 * 1024 * 1024) {
+        setCreating(false);
+        return toast.error(`${newFile.name} is larger than 20MB`);
+      }
+      const path = `clients/${clientId}/documents/${Date.now()}-${newFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from("media").upload(path, newFile);
+      if (upErr) {
+        setCreating(false);
+        return toast.error(`Upload failed — ${upErr.message}`);
+      }
+      fileUrl = supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
+      fileName = newFile.name;
+    }
+
     const { error } = await supabase.from("documents").insert({
       client_id: clientId,
       doc_type: newType as any,
-      title: newTitle.trim() || def.label,
+      title: newTitle.trim() || fileName || def.label,
       content: (tpl?.content as any) || defaultContent(def),
-      status: "draft",
-      client_fillable: !!def.clientFillable,
+      status: newMode === "upload" ? "sent" : "draft",
+      client_fillable: newMode === "upload" ? false : !!def.clientFillable,
+      file_url: fileUrl,
+      file_name: fileName,
       created_by: user?.id ?? null,
     } as any);
+    setCreating(false);
     if (error) return toast.error(error.message);
-    toast.success("Document created");
+    toast.success(newMode === "upload" ? "File sent to the client portal" : "Document created");
     setCreateOpen(false);
     setNewTitle("");
     setNewTemplate("none");
+    setNewFile(null);
+    setNewMode("write");
     fetchDocs();
   };
 
@@ -196,7 +226,10 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
           <h3 className="font-display text-lg font-semibold">Portal Documents</h3>
           <p className="text-sm text-muted-foreground">Everything {clientName} sees when they log in.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <FileArchive className="h-4 w-4 mr-1" /> Bulk upload
+          </Button>
           <Button variant="outline" asChild disabled={uploading}>
             <label className="cursor-pointer">
               <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading..." : "Upload file"}
@@ -285,12 +318,28 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle className="font-display">New document</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setNewMode("write")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${newMode === "write" ? "border-primary bg-primary/10" : "border-border hover:bg-accent/40"}`}
+              >
+                <PenLine className="h-4 w-4 mb-1" />
+                Write the contents
+              </button>
+              <button
+                onClick={() => setNewMode("upload")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${newMode === "upload" ? "border-primary bg-primary/10" : "border-border hover:bg-accent/40"}`}
+              >
+                <Upload className="h-4 w-4 mb-1" />
+                Upload a file
+              </button>
+            </div>
             <div className="space-y-2">
               <Label>Document type</Label>
               <Select value={newType} onValueChange={(v) => { setNewType(v); setNewTemplate("none"); }}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {DOC_TYPES.filter((d) => d.type !== "file_attachment").map((d) => (
+                  {DOC_TYPES.filter((d) => newMode === "upload" || d.type !== "file_attachment").map((d) => (
                     <SelectItem key={d.type} value={d.type}>{d.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -300,25 +349,38 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
             <div className="space-y-2">
               <Label>Title</Label>
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={getDocType(newType)?.label} className="bg-secondary border-border" />
+                placeholder={newFile?.name || getDocType(newType)?.label} className="bg-secondary border-border" />
             </div>
-            {templates.some((t) => t.doc_type === newType) && (
+            {newMode === "upload" ? (
               <div className="space-y-2">
-                <Label>Start from template</Label>
-                <Select value={newTemplate} onValueChange={setNewTemplate}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Blank</SelectItem>
-                    {templates.filter((t) => t.doc_type === newType).map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>File</Label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-sm hover:border-primary/50">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="truncate">{newFile ? newFile.name : "Choose a file (max 20MB)"}</span>
+                  <input type="file" className="hidden" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
+                </label>
               </div>
+            ) : (
+              templates.some((t) => t.doc_type === newType) && (
+                <div className="space-y-2">
+                  <Label>Start from template</Label>
+                  <Select value={newTemplate} onValueChange={setNewTemplate}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Blank</SelectItem>
+                      {templates.filter((t) => t.doc_type === newType).map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
             )}
           </div>
           <DialogFooter>
-            <Button onClick={handleCreate} className="rounded-full bg-primary text-primary-foreground w-full">Create document</Button>
+            <Button onClick={handleCreate} disabled={creating} className="rounded-full bg-primary text-primary-foreground w-full">
+              {creating ? "Saving..." : newMode === "upload" ? "Send file to client" : "Create document"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -345,6 +407,8 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkDocumentUpload clientId={clientId} open={bulkOpen} onOpenChange={setBulkOpen} onDone={fetchDocs} />
     </div>
   );
 };

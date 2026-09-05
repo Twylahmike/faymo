@@ -111,17 +111,55 @@ const PortalDocuments = ({
     fetchDocs();
   };
 
+  const handleUpload = async (file: File) => {
+    if (file.size > 20 * 1024 * 1024) return toast.error(`${file.name} is larger than 20MB`);
+    setUploading(true);
+    const path = `clients/${clientId}/uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error: upErr } = await supabase.storage.from("media").upload(path, file);
+    if (upErr) {
+      setUploading(false);
+      return toast.error(`Upload failed — ${upErr.message}`);
+    }
+    const url = supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("documents").insert({
+      client_id: clientId,
+      doc_type: "file_attachment" as any,
+      title: file.name,
+      content: { description: `Uploaded by ${clientName}` } as any,
+      status: "sent",
+      file_url: url,
+      file_name: file.name,
+      created_by: user?.id ?? null,
+    } as any);
+    setUploading(false);
+    if (error) return toast.error(error.message);
+    toast.success("Document uploaded");
+    fetchDocs();
+  };
+
+  const uploadButton = (
+    <Button variant="outline" asChild disabled={uploading}>
+      <label className="cursor-pointer">
+        <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading..." : "Upload document"}
+        <input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+      </label>
+    </Button>
+  );
+
   if (docs.length === 0) {
     return (
-      <Card className="p-8 text-center border-dashed">
+      <Card className="p-8 text-center border-dashed space-y-3">
         <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground">No documents have been shared with you yet.</p>
+        <p className="text-sm text-muted-foreground">No documents yet. You can upload your own here.</p>
+        <div className="flex justify-center">{uploadButton}</div>
       </Card>
     );
   }
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">{uploadButton}</div>
       <div className="grid gap-3 sm:grid-cols-2">
         {docs.map((doc) => {
           const d = getDocType(doc.doc_type);
