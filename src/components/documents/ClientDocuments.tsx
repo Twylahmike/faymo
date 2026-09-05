@@ -315,12 +315,28 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle className="font-display">New document</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setNewMode("write")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${newMode === "write" ? "border-primary bg-primary/10" : "border-border hover:bg-accent/40"}`}
+              >
+                <PenLine className="h-4 w-4 mb-1" />
+                Write the contents
+              </button>
+              <button
+                onClick={() => setNewMode("upload")}
+                className={`rounded-lg border p-3 text-left text-sm transition-colors ${newMode === "upload" ? "border-primary bg-primary/10" : "border-border hover:bg-accent/40"}`}
+              >
+                <Upload className="h-4 w-4 mb-1" />
+                Upload a file
+              </button>
+            </div>
             <div className="space-y-2">
               <Label>Document type</Label>
               <Select value={newType} onValueChange={(v) => { setNewType(v); setNewTemplate("none"); }}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {DOC_TYPES.filter((d) => d.type !== "file_attachment").map((d) => (
+                  {DOC_TYPES.filter((d) => newMode === "upload" || d.type !== "file_attachment").map((d) => (
                     <SelectItem key={d.type} value={d.type}>{d.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -330,25 +346,38 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
             <div className="space-y-2">
               <Label>Title</Label>
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={getDocType(newType)?.label} className="bg-secondary border-border" />
+                placeholder={newFile?.name || getDocType(newType)?.label} className="bg-secondary border-border" />
             </div>
-            {templates.some((t) => t.doc_type === newType) && (
+            {newMode === "upload" ? (
               <div className="space-y-2">
-                <Label>Start from template</Label>
-                <Select value={newTemplate} onValueChange={setNewTemplate}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Blank</SelectItem>
-                    {templates.filter((t) => t.doc_type === newType).map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>File</Label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-sm hover:border-primary/50">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="truncate">{newFile ? newFile.name : "Choose a file (max 20MB)"}</span>
+                  <input type="file" className="hidden" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
+                </label>
               </div>
+            ) : (
+              templates.some((t) => t.doc_type === newType) && (
+                <div className="space-y-2">
+                  <Label>Start from template</Label>
+                  <Select value={newTemplate} onValueChange={setNewTemplate}>
+                    <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Blank</SelectItem>
+                      {templates.filter((t) => t.doc_type === newType).map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
             )}
           </div>
           <DialogFooter>
-            <Button onClick={handleCreate} className="rounded-full bg-primary text-primary-foreground w-full">Create document</Button>
+            <Button onClick={handleCreate} disabled={creating} className="rounded-full bg-primary text-primary-foreground w-full">
+              {creating ? "Saving..." : newMode === "upload" ? "Send file to client" : "Create document"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
