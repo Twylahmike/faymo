@@ -407,6 +407,8 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkDocumentUpload clientId={clientId} open={bulkOpen} onOpenChange={setBulkOpen} onDone={fetchDocs} />
     </div>
   );
 };
