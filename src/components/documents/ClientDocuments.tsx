@@ -64,6 +64,10 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
   const [draft, setDraft] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [newMode, setNewMode] = useState<"write" | "upload">("write");
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const fetchDocs = useCallback(async () => {
     const { data } = await supabase
