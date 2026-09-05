@@ -97,22 +97,47 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
   const handleCreate = async () => {
     const def = getDocType(newType);
     if (!def) return;
+    if (newMode === "upload" && !newFile) return toast.error("Choose a file to send, or switch to writing the contents");
+    setCreating(true);
     const tpl = templates.find((t) => t.id === newTemplate);
     const { data: { user } } = await supabase.auth.getUser();
+
+    let fileUrl: string | null = null;
+    let fileName: string | null = null;
+    if (newMode === "upload" && newFile) {
+      if (newFile.size > 20 * 1024 * 1024) {
+        setCreating(false);
+        return toast.error(`${newFile.name} is larger than 20MB`);
+      }
+      const path = `clients/${clientId}/documents/${Date.now()}-${newFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from("media").upload(path, newFile);
+      if (upErr) {
+        setCreating(false);
+        return toast.error(`Upload failed — ${upErr.message}`);
+      }
+      fileUrl = supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
+      fileName = newFile.name;
+    }
+
     const { error } = await supabase.from("documents").insert({
       client_id: clientId,
       doc_type: newType as any,
-      title: newTitle.trim() || def.label,
+      title: newTitle.trim() || fileName || def.label,
       content: (tpl?.content as any) || defaultContent(def),
-      status: "draft",
-      client_fillable: !!def.clientFillable,
+      status: newMode === "upload" ? "sent" : "draft",
+      client_fillable: newMode === "upload" ? false : !!def.clientFillable,
+      file_url: fileUrl,
+      file_name: fileName,
       created_by: user?.id ?? null,
     } as any);
+    setCreating(false);
     if (error) return toast.error(error.message);
-    toast.success("Document created");
+    toast.success(newMode === "upload" ? "File sent to the client portal" : "Document created");
     setCreateOpen(false);
     setNewTitle("");
     setNewTemplate("none");
+    setNewFile(null);
+    setNewMode("write");
     fetchDocs();
   };
 
