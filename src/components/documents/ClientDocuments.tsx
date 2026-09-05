@@ -12,7 +12,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Trash2, Upload, Download, PenLine, Save, BookmarkPlus } from "lucide-react";
+import { FileText, Plus, Trash2, Upload, Download, PenLine, Save, BookmarkPlus, FileArchive } from "lucide-react";
+import BulkDocumentUpload from "./BulkDocumentUpload";
 import DocumentFields from "./DocumentFields";
 import { DOC_TYPES, DOC_STATUSES, getDocType, defaultContent } from "@/lib/documentTypes";
 import { format } from "date-fns";
