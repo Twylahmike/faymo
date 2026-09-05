@@ -226,7 +226,10 @@ const ClientDocuments = ({ clientId, clientName }: { clientId: string; clientNam
           <h3 className="font-display text-lg font-semibold">Portal Documents</h3>
           <p className="text-sm text-muted-foreground">Everything {clientName} sees when they log in.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <FileArchive className="h-4 w-4 mr-1" /> Bulk upload
+          </Button>
           <Button variant="outline" asChild disabled={uploading}>
             <label className="cursor-pointer">
               <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading..." : "Upload file"}
